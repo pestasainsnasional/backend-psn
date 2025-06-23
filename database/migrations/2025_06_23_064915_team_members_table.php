@@ -10,11 +10,11 @@ return new class extends Migration
     {
         Schema::create('team_members', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('team_id')->constrained()->onDelete('cascade');
-            $table->foreignId('participant_id')->constrained()->onDelete('cascade');
+            $table->foreignId('teams_id')->constrained()->onDelete('cascade');
+            $table->foreignId('participants_id')->constrained()->onDelete('cascade');
             $table->enum('role', ['leader', 'member'])->default('leader');
             $table->timestamps();
-            $table->unique(['team_id', 'participant_id']);
+            $table->unique(['teams_id', 'participants_id']);
         });
     }
 

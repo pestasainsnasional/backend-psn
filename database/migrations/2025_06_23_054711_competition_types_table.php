@@ -10,7 +10,7 @@ return new class extends Migration
     {
          Schema::create('competition_types', function (Blueprint $table) {
             $table->id();
-            $table->string('type')->unique();
+            $table->enum('type', ['individual', 'group']);
             $table->string('current_batch')->unique();
             $table->integer('slot_remaining')->default(0);
             $table->decimal('price', 10, 2)->default(0);

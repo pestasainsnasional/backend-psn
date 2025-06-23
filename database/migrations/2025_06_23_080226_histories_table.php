@@ -8,20 +8,19 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('competitions', function (Blueprint $table) {
+        Schema::create('histories', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('competition_types_id')->constrained()->onDelete('cascade');
-            $table->string('name');
+            $table->string('theme');
             $table->text('description');
-            $table->text('rules');
-            $table->string('major');
-            $table->boolean('is_active')->default(true);
+            $table->string('season_year');
+            $table->integer('total_participants');
+            $table->integer('total_competitions');
             $table->timestamps();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('competitions');
+        Schema::dropIfExists('histories');
     }
 };
