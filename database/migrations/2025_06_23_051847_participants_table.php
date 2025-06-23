@@ -9,8 +9,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('participants', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->nullable()->constrained()->onDelete('set null');
+            $table->ulid('id')->primary();
+            $table->foreignUlid('user_id')->nullable()->constrained()->onDelete('set null');
             $table->string('full_name');
             $table->string('place_of_birth');
             $table->date('date_of_birth');

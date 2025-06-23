@@ -9,9 +9,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('team_members', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('teams_id')->constrained()->onDelete('cascade');
-            $table->foreignId('participants_id')->constrained()->onDelete('cascade');
+            $table->ulid('id')->primary();
+            $table->foreignUlid('teams_id')->constrained()->onDelete('cascade');
+            $table->foreignUlid('participants_id')->constrained()->onDelete('cascade');
             $table->enum('role', ['leader', 'member'])->default('leader');
             $table->timestamps();
             $table->unique(['teams_id', 'participants_id']);

@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
          Schema::create('competition_types', function (Blueprint $table) {
-            $table->id();
+            $table->ulid('id')->primary();
             $table->enum('type', ['individual', 'group']);
             $table->string('current_batch')->unique();
             $table->integer('slot_remaining')->default(0);

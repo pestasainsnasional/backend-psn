@@ -9,10 +9,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('registrations', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('participants_id')->constrained()->onDelete('cascade');
-            $table->foreignId('competitions_id')->constrained()->onDelete('cascade');
-            $table->foreignId('teams_id')->constrained()->onDelete('cascade');
+            $table->ulid('id')->primary();
+            $table->foreignUlid('participants_id')->constrained()->onDelete('cascade');
+            $table->foreignUlid('competitions_id')->constrained()->onDelete('cascade');
+            $table->foreignUlid('teams_id')->constrained()->onDelete('cascade');
             $table->enum('status', ['draft', 'pending', 'verified', 'rejected'])->default('draft');
             $table->timestamps();
         });

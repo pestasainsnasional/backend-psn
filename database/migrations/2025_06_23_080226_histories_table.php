@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('histories', function (Blueprint $table) {
-            $table->id();
+            $table->ulid('id')->primary();
             $table->string('theme');
             $table->text('description');
             $table->string('season_year');
