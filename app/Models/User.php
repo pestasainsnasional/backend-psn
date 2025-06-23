@@ -9,10 +9,12 @@ use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 use Filament\Panel;
 use Filament\Models\Contracts\FilamentUser;
+use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 
-class User extends Authenticatable implements FilamentUser
+class User extends Authenticatable implements FilamentUser, MustVerifyEmail
 {
-    use HasUlids, HasRoles, HasFactory, Notifiable;
+    use HasApiTokens, HasUlids, HasRoles, HasFactory, Notifiable;
 
     /**
      * The attributes that are mass assignable.
