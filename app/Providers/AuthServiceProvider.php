@@ -20,15 +20,22 @@ class AuthServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $this->registerPolicies();
+
         VerifyEmail::createUrlUsing(function (object $notifiable) {
-            return URL::temporarySignedRoute(
+            $frontendUrl = config('app.frontend_url', 'http://localhost:5173');
+
+            $backendUrl = URL::temporarySignedRoute(
                 'verification.verify',
-                Carbon::now()->addMinutes(60),
+                Carbon::now()->addMinutes(config('auth.verification.expire', 60)),
                 [
                     'id' => $notifiable->getKey(),
                     'hash' => sha1($notifiable->getEmailForVerification()),
                 ]
             );
+
+            $backendPathAndQuery = str_replace(url('/'), '', $backendUrl);
+            return $frontendUrl . $backendPathAndQuery;
         });
 
         Gate::define('access-admin-dashboard', function (User $user) {
