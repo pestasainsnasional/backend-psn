@@ -11,6 +11,7 @@ use Filament\Panel;
 use Filament\Models\Contracts\FilamentUser;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class User extends Authenticatable implements FilamentUser, MustVerifyEmail
 {
@@ -60,5 +61,10 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
     public function canAccessPanel(Panel $panel): bool
     {
         return $this->hasRole('admin');
+    }
+
+    public function createdCompetitionTypes(): HasMany
+    {
+        return $this->hasMany(CompetitionType::class, 'created_by');
     }
 }

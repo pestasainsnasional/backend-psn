@@ -30,7 +30,7 @@ class HistoryResource extends Resource
                     ->required()
                     ->maxLength(255)
                     ->label('Tema Pesta Sains Nasional'),
-                Forms\Components\Textarea::make('overview_desc')
+                Forms\Components\Textarea::make('description')
                     ->required()
                     ->maxLength(65535)
                     ->rows(5)
@@ -62,8 +62,7 @@ class HistoryResource extends Resource
                     ->nullable()
                     ->multiple()
                     ->reorderable()
-                    ->downloadable()
-                    ->enableReordering(),
+                    ->downloadable(),
             ]);
     }
 

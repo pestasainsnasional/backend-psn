@@ -10,6 +10,7 @@ return new class extends Migration
     {
          Schema::create('competition_types', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->foreignUlid('created_by')->nullable()->constrained('users')->onDelete('set null');
             $table->enum('type', ['individual', 'group']);
             $table->string('current_batch')->unique();
             $table->integer('slot_remaining')->default(0);

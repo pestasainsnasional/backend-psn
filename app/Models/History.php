@@ -14,7 +14,7 @@ class History extends Model implements HasMedia
 
     protected $fillable = [
         'theme',
-        'overview_desc',
+        'description',
         'season_year',
         'total_participants',
         'total_competitions',
