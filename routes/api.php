@@ -16,4 +16,5 @@ Route::get('/auth/google/callback', [SocialLoginController::class, 'handleGoogle
 Route::controller(CompetitionController::class)->group(function () {
     Route::get('/competitions', 'index');
     Route::get('/competitions/{competition}', 'show');
+    Route::get('/competition-types', 'getCompetitionTypes');
 });

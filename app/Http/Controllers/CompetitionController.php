@@ -27,4 +27,14 @@ class CompetitionController extends Controller
             'data' => $competition,
         ]);
     }
+
+    public function getCompetitionTypes(): JsonResponse
+    {
+        $competitionTypes = CompetitionType::orderBy('type')->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $competitionTypes,
+        ]);
+    }
 }
