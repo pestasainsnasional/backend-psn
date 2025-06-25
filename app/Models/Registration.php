@@ -16,9 +16,9 @@ class Registration extends Model
 
 
     protected $fillable = [
-        'participants_id',
-        'competitions_id',
-        'teams_id',
+        'participant_id',
+        'competition_id',
+        'team_id',
         'status',
     ];
 
@@ -26,17 +26,17 @@ class Registration extends Model
     public function participant(): BelongsTo
     {
        
-        return $this->belongsTo(Participant::class, 'participants_id');
+        return $this->belongsTo(Participant::class, 'participant_id');
     }
 
     public function competition(): BelongsTo
     {
-        return $this->belongsTo(Competition::class, 'competitions_id');
+        return $this->belongsTo(Competition::class, 'competition_id');
     }
 
 
     public function team(): BelongsTo
     {
-        return $this->belongsTo(Team::class, 'teams_id');
+        return $this->belongsTo(Team::class, 'team_id');
     }
 }

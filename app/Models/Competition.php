@@ -17,7 +17,7 @@ class Competition extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'competition_types_id',
+        'competition_type_id',
         'name',
         'description',
         'rules',
@@ -32,7 +32,7 @@ class Competition extends Model
 
     public function competitionType(): BelongsTo
     {
-        return $this->belongsTo(CompetitionType::class, 'competition_types_id');
+        return $this->belongsTo(CompetitionType::class, 'competition_type_id');
     }
 
     public function registrations(): HasMany

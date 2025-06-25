@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo; 
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Auth;
 
 class CompetitionType extends Model
 {
@@ -18,13 +19,24 @@ class CompetitionType extends Model
     protected $table = 'competition_types';
 
     protected $fillable = [
-        'created_by', 
+        'user_id', 
         'type',
         'current_batch',
         'slot_remaining',
         'price',
     ];
+    
+    protected static function boot()
+    {
+        parent::boot();
 
+        static::creating(function ($model) {
+            if (Auth::check()) { 
+                $model->users_id = Auth::id();
+            }
+        });
+    }
+    
     protected function casts(): array
     {
         return ['price' => 'decimal:2'];
@@ -37,6 +49,6 @@ class CompetitionType extends Model
 
     public function creator(): BelongsTo 
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

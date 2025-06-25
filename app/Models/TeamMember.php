@@ -16,18 +16,18 @@ class TeamMember extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'teams_id',
-        'participants_id',
+        'team_id',
+        'participant_id',
         'role',
     ];
 
     public function team(): BelongsTo
     {
-        return $this->belongsTo(Team::class, 'teams_id');
+        return $this->belongsTo(Team::class, 'team_id');
     }
 
     public function participant(): BelongsTo
     {
-        return $this->belongsTo(Participant::class, 'participants_id');
+        return $this->belongsTo(Participant::class, 'participant_id');
     }
 }

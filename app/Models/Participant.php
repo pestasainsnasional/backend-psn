@@ -42,6 +42,6 @@ class Participant extends Model implements HasMedia
 
     public function teamMemberships(): HasMany
     {
-        return $this->hasMany(TeamMember::class, 'participants_id');
+        return $this->hasMany(TeamMember::class, 'participant_id');
     }
 }
