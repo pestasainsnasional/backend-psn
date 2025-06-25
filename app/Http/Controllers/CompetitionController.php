@@ -18,4 +18,13 @@ class CompetitionController extends Controller
             'data' => $competitions,
         ]);
     }
+
+    public function show(Competition $competition): JsonResponse{
+        $competition->load('competitionType');
+
+        return response()->json([
+            'success' => true,
+            'data' => $competition,
+        ]);
+    }
 }
