@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('competition_histories', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->foreignUlid('histories_id')->constrained()->onDelete('cascade');
+            $table->foreignUlid('history_id')->constrained('histories')->onDelete('cascade');
             $table->string('competition_name');
             $table->enum('competition_type', ['individual', 'group']);
             $table->string('winner_name');

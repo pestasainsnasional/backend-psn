@@ -8,11 +8,11 @@ return new class extends Migration
 {
     public function up(): void
     {
-         Schema::create('competition_types', function (Blueprint $table) {
+        Schema::create('competition_types', function (Blueprint $table) {
             $table->ulid('id')->primary();
             $table->foreignUlid('created_by')->nullable()->constrained('users')->onDelete('set null');
             $table->enum('type', ['individual', 'group']);
-            $table->string('current_batch')->unique();
+            $table->string('current_batch');
             $table->integer('slot_remaining')->default(0);
             $table->decimal('price', 10, 2)->default(0);
             $table->timestamps();

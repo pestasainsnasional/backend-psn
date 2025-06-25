@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('competitions', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->foreignUlid('competition_types_id')->constrained()->onDelete('cascade');
+            $table->foreignUlid('competition_type_id')->constrained()->onDelete('cascade');
             $table->string('name');
             $table->text('description');
             $table->text('rules');
