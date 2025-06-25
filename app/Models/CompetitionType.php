@@ -19,7 +19,7 @@ class CompetitionType extends Model
     protected $table = 'competition_types';
 
     protected $fillable = [
-        'user_id', 
+        'created_by', 
         'type',
         'current_batch',
         'slot_remaining',
@@ -32,7 +32,7 @@ class CompetitionType extends Model
 
         static::creating(function ($model) {
             if (Auth::check()) { 
-                $model->users_id = Auth::id();
+                $model->created_by = Auth::id();
             }
         });
     }
