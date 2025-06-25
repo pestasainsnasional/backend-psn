@@ -16,8 +16,7 @@ class CompetitionResource extends Resource
     protected static ?string $model = Competition::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-trophy';
-
-    protected static ?string $navigationGroup = 'Kompetisi';
+    protected static ?string $navigationGroup = 'Competition';
 
     public static function form(Form $form): Form
     {

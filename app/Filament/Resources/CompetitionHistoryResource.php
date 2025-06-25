@@ -19,7 +19,7 @@ class CompetitionHistoryResource extends Resource
     protected static ?string $model = CompetitionHistory::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-trophy';
-    protected static ?string $navigationGroup = 'Manajemen Event';
+    protected static ?string $navigationGroup = 'Historical Data';
     protected static ?int $navigationSort = 2;
 
     public static function form(Form $form): Form
