@@ -12,7 +12,7 @@ return new class extends Migration
             $table->ulid('id')->primary();
             $table->foreignUlid('history_id')->constrained('histories')->onDelete('cascade');
             $table->string('competition_name');
-            $table->enum('competition_type', ['individual', 'group']);
+            $table->enum('competition_type', ['individu', 'group']);
             $table->string('winner_name');
             $table->string('winner_school');
             $table->integer('rank');

@@ -54,7 +54,7 @@ class HistoryResource extends Resource
                     ->integer()
                     ->minValue(0)
                     ->label('Total Cabang Lomba'),
-                
+
                 SpatieMediaLibraryFileUpload::make('documentation')
                     ->collection('documentation')
                     ->label('Dokumentasi (Foto/Video Galeri Utama)')
@@ -78,7 +78,7 @@ class HistoryResource extends Resource
                     ->searchable()
                     ->sortable()
                     ->label('Tahun')
-                    ->formatStateUsing(fn (string $state): string => "PSN {$state}")
+                    ->formatStateUsing(fn(string $state): string => "PSN {$state}")
                     ->alignCenter(),
                 Tables\Columns\TextColumn::make('total_participants')
                     ->numeric()
@@ -88,16 +88,15 @@ class HistoryResource extends Resource
                     ->numeric()
                     ->sortable()
                     ->label('Lomba'),
-                
+
                 SpatieMediaLibraryImageColumn::make('documentation')
                     ->collection('documentation')
                     ->label('Galeri Utama')
                     ->toggleable(isToggledHiddenByDefault: false)
-                    ->square()
-                    ->stacked()
                     ->limit(3)
+                    ->height('100px')
                     ->wrap(),
-                
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -111,7 +110,7 @@ class HistoryResource extends Resource
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('season_year')
-                    ->options(fn (): array => History::select('season_year')->distinct()->orderBy('season_year', 'desc')->pluck('season_year', 'season_year')->toArray())
+                    ->options(fn(): array => History::select('season_year')->distinct()->orderBy('season_year', 'desc')->pluck('season_year', 'season_year')->toArray())
                     ->label('Filter Tahun'),
             ])
             ->actions([
