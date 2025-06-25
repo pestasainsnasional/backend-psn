@@ -21,7 +21,7 @@ class CompetitionTypeResource extends Resource
             ->schema([
                 Forms\Components\Select::make('type')
                     ->options([
-                        'individual' => 'Individual',
+                        'individu' => 'Individu',
                         'group'      => 'Group',
                     ])
                     ->required(),
