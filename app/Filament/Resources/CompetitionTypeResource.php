@@ -44,28 +44,18 @@ class CompetitionTypeResource extends Resource
             ]);
     }
 
-
-    public static function mutateFormDataBeforeCreate(array $data): array
-    {
-        // Mengambil ID user yang sedang login menggunakan helper Filament.
-        $data['created_by'] = filament()->auth()->id();
-        
-        return $data;
-    }
-
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
-  
                 Tables\Columns\TextColumn::make('creator.name')
                     ->label('Created By')
                     ->searchable()
                     ->sortable()
-                    ->placeholder('N/A'), 
+                    ->placeholder('N/A'),
 
                 Tables\Columns\TextColumn::make('type')->searchable(),
-                
+
                 Tables\Columns\TextColumn::make('current_batch')
                     ->label('Batch')
                     ->badge()
@@ -89,9 +79,13 @@ class CompetitionTypeResource extends Resource
                 ]),
             ]);
     }
-    
 
-    public static function getRelations(): array { return []; }
+
+    public static function getRelations(): array
+    {
+        return [];
+    }
+
     public static function getPages(): array
     {
         return [
