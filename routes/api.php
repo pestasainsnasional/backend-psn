@@ -13,7 +13,6 @@ Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
 Route::get('/auth/google/redirect', [SocialLoginController::class, 'redirectToGoogle']);
 Route::get('/auth/google/callback', [SocialLoginController::class, 'handleGoogleCallback']);
 
-
 Route::controller(CompetitionController::class)->group(function () {
     Route::get('/competitions', 'index');
     Route::get('/competitions/{competition}', 'show');
