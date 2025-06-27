@@ -17,6 +17,7 @@ use Filament\Infolists\Components\TextEntry;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\RegistrationResource\Pages;
 use App\Filament\Resources\RegistrationResource\RelationManagers;
+use App\Filament\Resources\TeamResource\RelationManagers\TeamMembersRelationManager;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Infolists;
 use Filament\Infolists\Infolist;
@@ -147,7 +148,7 @@ class RegistrationResource extends Resource
     public static function getRelations(): array
     {
         return [
-            // KITA AKAN MENAMBAHKAN RELATION MANAGER DI SINI NANTI
+            TeamMembersRelationManager::class
         ];
     }
     
