@@ -2,16 +2,18 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\TeamResource\Pages;
-use App\Filament\Resources\TeamResource\RelationManagers;
-use App\Models\Team;
 use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Resources\Resource;
+use App\Models\Team;
 use Filament\Tables;
+use Filament\Forms\Form;
 use Filament\Tables\Table;
+use Filament\Resources\Resource;
 use Illuminate\Database\Eloquent\Builder;
+use App\Filament\Resources\TeamResource\Pages;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use App\Filament\Resources\TeamResource\RelationManagers;
+use Filament\Tables\Columns\SpatieMediaLibraryImageColumn;
+use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 
 class TeamResource extends Resource
 {
@@ -52,7 +54,6 @@ class TeamResource extends Resource
                     ])
                     ->columns(2), 
 
-                
                 Forms\Components\Section::make('Informasi Guru Pendamping')
                     ->schema([
                         Forms\Components\TextInput::make('companion_teacher_name')
@@ -69,8 +70,16 @@ class TeamResource extends Resource
                             ->required()
                             ->numeric()
                             ->label('NIP Guru'),
-                    ])
-                    ->columns(2),
+                    ])->columns(2),
+
+                    Forms\Components\Section::make('Dokumen Tim')
+                    ->schema([
+                        SpatieMediaLibraryFileUpload::make('payment_proof')
+                            ->label('Bukti Pembayaran')
+                            ->collection('payment-proofs') 
+                            ->image()
+                            ->imageEditor(),
+                    ]),
             ]);
     }
 
@@ -98,6 +107,10 @@ class TeamResource extends Resource
                     ->label('Tanggal Daftar')
                     ->dateTime('d M Y')
                     ->sortable(),
+
+                SpatieMediaLibraryImageColumn::make('payment_proof')
+                    ->label('Bukti Bayar')
+                    ->collection('payment-proofs'),
             ])
             ->filters([
                 
@@ -116,7 +129,7 @@ class TeamResource extends Resource
     public static function getRelations(): array
     {
         return [
-            // Nanti kita tambahin relasi ke anggota tim di sini
+            // Nanti kita bisa tambahkan relasi ke anggota tim di sini
         ];
     }
 
