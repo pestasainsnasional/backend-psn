@@ -20,14 +20,13 @@ use Illuminate\Support\Facades\Auth;
 class AdminResource extends Resource
 {
     protected static ?string $model = User::class;
-
     protected static ?string $navigationIcon = 'heroicon-o-shield-check';
     protected static ?string $navigationGroup = 'Manajemen Admin';
     protected static ?int $navigationSort = 1;
 
     protected static ?string $navigationLabel = 'Administrator';
     protected static ?string $pluralLabel = 'Administrators';
-    protected static ?string $label = 'Administrator';
+    protected static ?string $label = 'Administrators';
 
     public static function form(Form $form): Form
     {
@@ -64,7 +63,7 @@ class AdminResource extends Resource
                     ->searchable()
                     ->required()
                     ->label('Role (Peran)')
-                    ->default(fn (string $operation): array|null => $operation === 'create' ? [Role::where('name', 'admin')->first()?->id] : null)
+                    ->default(fn (string $operation) => $operation === 'create' ? [Role::where('name', 'admin')->first()?->id] : null)
                     ->disabled(fn (string $operation) => $operation === 'edit' && !auth()->user()->hasRole('super_admin')),
             ]);
     }
@@ -81,6 +80,10 @@ class AdminResource extends Resource
                     ->searchable()
                     ->sortable()
                     ->label('Email Admin'),
+                Tables\Columns\IconColumn::make('email_verified_at')
+                    ->boolean()
+                    ->label('Terverifikasi')
+                    ->sortable(),
                 TextColumn::make('roles.name')
                     ->label('Roles')
                     ->badge()
