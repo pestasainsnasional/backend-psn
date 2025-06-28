@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\SocialLoginController;
 use App\Http\Controllers\CompetitionController;
 use App\Http\Controllers\TestimonialController;
+use App\Http\Controllers\Api\RegistrationController;
 
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user();
@@ -22,3 +23,5 @@ Route::controller(CompetitionController::class)->group(function () {
 Route::controller(TestimonialController::class)->group(function() {
     Route::get('/testimonials', 'index');
 });
+
+Route::middleware('auth:sanctum')->post('/registrasi', [RegistrationController::class, 'store']);
