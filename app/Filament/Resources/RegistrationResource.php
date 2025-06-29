@@ -28,6 +28,7 @@ class RegistrationResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
     protected static ?string $navigationGroup = 'Manajemen Pendaftaran';
+    protected static ?string $navigationLabel = 'Registrasi';
     protected static ?int $navigationSort = 1; 
 
     public static function form(Form $form): Form

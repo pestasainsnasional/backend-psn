@@ -17,7 +17,7 @@ class CompetitionHistoryResource extends Resource
     protected static ?string $model = CompetitionHistory::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-trophy';
-    protected static ?string $navigationLabel = 'Histori Kompetisi';
+    protected static ?string $navigationLabel = 'Riwayat Kompetisi';
     protected static ?string $navigationGroup = 'Data Historis';
     protected static ?int $navigationSort = 2;
 

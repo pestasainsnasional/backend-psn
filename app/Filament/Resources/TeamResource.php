@@ -23,6 +23,7 @@ class TeamResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-user-group';
 
     protected static ?string $navigationGroup = 'Manajemen Pendaftaran';
+    protected static ?string $navigationLabel = 'Tim';
 
     public static function form(Form $form): Form
     {
