@@ -6,6 +6,9 @@ use App\Http\Controllers\Auth\SocialLoginController;
 use App\Http\Controllers\CompetitionController;
 use App\Http\Controllers\TestimonialController;
 use App\Http\Controllers\Api\RegistrationController;
+use App\Http\Controllers\Api\DraftRegistrationController;
+use App\Http\Controllers\Api\FinalizeRegistrationController;
+
 
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user();
@@ -25,3 +28,11 @@ Route::controller(TestimonialController::class)->group(function() {
 });
 
 Route::middleware('auth:sanctum')->post('/registrasi', [RegistrationController::class, 'store']);
+
+Route::moddleware('auth:santum')->group(function() {
+    Route ::post('/draft', [DraftRegistrationController::class, 'save']);
+    Route::get('/drafts/{competition_id}', [DraftRegistrationController::class, 'get']);
+
+     Route::post('/registrations/finalize', [FinalizeRegistrationController::class, 'store']);
+
+});
