@@ -14,7 +14,6 @@ class Registration extends Model
     public $incrementing = false;
     protected $keyType = 'string';
 
-
     protected $fillable = [
         'user_id',
         'participant_id',
@@ -23,15 +22,13 @@ class Registration extends Model
         'status',
     ];
 
-
-       public function user(): BelongsTo
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
     public function participant(): BelongsTo
     {
-       
         return $this->belongsTo(Participant::class, 'participant_id');
     }
 
