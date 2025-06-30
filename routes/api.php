@@ -24,4 +24,4 @@ Route::controller(TestimonialController::class)->group(function() {
     Route::get('/testimonials', 'index');
 });
 
-Route::middleware('auth:sanctum')->post('/registrasi', [RegistrationController::class, 'store']);
+
