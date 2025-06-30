@@ -16,12 +16,18 @@ class Registration extends Model
 
 
     protected $fillable = [
+        'user_id',
         'participant_id',
         'competition_id',
         'team_id',
         'status',
     ];
 
+
+       public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
 
     public function participant(): BelongsTo
     {
@@ -33,7 +39,6 @@ class Registration extends Model
     {
         return $this->belongsTo(Competition::class, 'competition_id');
     }
-
 
     public function team(): BelongsTo
     {
