@@ -65,7 +65,7 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
 
     public function createdCompetitionTypes(): HasMany
     {
-        return $this->hasMany(CompetitionType::class, 'created_by');
+        return $this->hasMany(CompetitionType::class, 'created_by');  
     }
 
       public function registrations(): HasMany

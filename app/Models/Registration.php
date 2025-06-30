@@ -15,7 +15,7 @@ class Registration extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'user_id', 
+        'user_id',
         'participant_id',
         'competition_id',
         'team_id',
