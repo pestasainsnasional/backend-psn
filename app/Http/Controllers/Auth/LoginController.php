@@ -13,16 +13,24 @@ class LoginController extends Controller
     public function store(LoginRequest $request): JsonResponse
     {
         $request->authenticate();
-
         $user = Auth::user();
+
         $user->tokens()->delete();
         $token = $user->createToken('api-token-' . $user->name)->plainTextToken;
+        
+        if (is_null($user->email_verified_at)) {
+            return response()->json([
+                'token' => $token,
+                'message' => 'Email belum diverifikasi. Silakan cek email kamu untuk verifikasi.',
+            ], 202); 
+        }
 
         return response()->json([
             'user' => $user,
             'token' => $token,
         ]);
     }
+
 
     public function destroy(Request $request): JsonResponse
     {
