@@ -6,8 +6,6 @@ use App\Http\Controllers\Auth\SocialLoginController;
 use App\Http\Controllers\CompetitionController;
 use App\Http\Controllers\TestimonialController;
 use App\Http\Controllers\Api\RegistrationController;
-use App\Http\Controllers\Api\DraftRegistrationController;
-use App\Http\Controllers\Api\FinalizeRegistrationController;
 use App\Http\Controllers\HistoryController;
 
 
