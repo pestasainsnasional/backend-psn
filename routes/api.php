@@ -44,4 +44,5 @@ Route::middleware('auth:sanctum')->prefix('step-registration')->group(function (
 Route::prefix('histories')->group(function() {
     Route::get('/seasons', [HistoryController::class, 'listSeasons']);
     Route::get('/season/latest', [HistoryController::class, 'latestSeason']);
+    Route::get('/season/{year}', [HistoryController::class, 'spesificSeason']);
 });
