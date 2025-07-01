@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('registrations', function (Blueprint $table) {
             $table->ulid('id')->primary();
             $table->foreignUlid('user_id')->constrained()->onDelete('cascade');
-            $table->foreignUlid('participant_id')->constrained()->onDelete('cascade');
+            $table->foreignUlid('participant_id')->constrained()->onDelete('cascade')->nullable();
             $table->foreignUlid('competition_id')->constrained()->onDelete('cascade');
             $table->foreignUlid('team_id')->constrained()->onDelete('cascade');
             $table->enum('status', ['draft_step_1','draft_step_2','draft_step_3','draft_step_4', 'pending', 'verified', 'rejected'])->default('draft_step_1');
