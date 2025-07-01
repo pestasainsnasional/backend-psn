@@ -12,6 +12,9 @@ class CompetitionHistory extends Model implements HasMedia
 {
     use HasFactory, HasUlids, InteractsWithMedia;
 
+    protected $appends = ['image_urls'];
+    protected $hidden = ['media'];
+
     protected $fillable = [
         'history_id',
         'competition_name',
@@ -21,7 +24,7 @@ class CompetitionHistory extends Model implements HasMedia
         'winner_photo_url',
         'rank',
     ];
-    
+
     public $incrementing = false;
     protected $keyType = 'string';
 
@@ -35,5 +38,12 @@ class CompetitionHistory extends Model implements HasMedia
         $this->addMediaCollection('winner_photos')
             ->acceptsMimeTypes(['image/jpg', 'image/jpeg', 'image/png'])
             ->singleFile();
+    }
+
+    public function getImageUrlsAttribute()
+    {
+        return $this->getMedia('winner_photos')->map(function ($media) {
+            return $media->original_url;
+        });
     }
 }

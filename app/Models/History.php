@@ -12,6 +12,9 @@ class History extends Model implements HasMedia
 {
     use HasFactory, HasUlids, InteractsWithMedia;
 
+    protected $appends = ['image_urls'];
+    protected $hidden = ['media'];
+
     protected $fillable = [
         'theme',
         'description',
@@ -33,5 +36,12 @@ class History extends Model implements HasMedia
     {
         $this->addMediaCollection('documentation')
             ->acceptsMimeTypes(['image/jpg', 'image/jpeg', 'image/png']);
+    }
+
+    public function getImageUrlsAttribute()
+    {
+        return $this->getMedia('documentation')->map(function ($media) {
+            return $media->original_url;
+        });
     }
 }

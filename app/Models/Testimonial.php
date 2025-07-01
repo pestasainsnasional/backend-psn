@@ -12,6 +12,9 @@ class Testimonial extends Model implements HasMedia
 {
     use HasFactory, HasUlids, InteractsWithMedia;
 
+    protected $appends = ['image_urls'];
+    protected $hidden = ['media'];
+    
     public $incrementing = false;
     protected $keyType = 'string';
 
@@ -21,5 +24,10 @@ class Testimonial extends Model implements HasMedia
         'institution',
     ];
 
-
+    public function getImageUrlsAttribute()
+    {
+        return $this->getMedia('avatar')->map(function ($media) {
+            return $media->original_url;
+        });
+    }
 }
