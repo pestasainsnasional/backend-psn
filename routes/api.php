@@ -39,15 +39,4 @@ Route::middleware('auth:sanctum')->prefix('step-registration')->group(function (
     Route::post('/3-pendamping', [RegistrationController::class, 'storeStep3']);
     Route::post('/4-dokumen', [RegistrationController::class, 'storeStep4']);
     Route::post('/finalisasi', [RegistrationController::class, 'finalize']);
-
-});
-
-
-
-
-Route::middleware('auth:santum')->group(function() {
-    Route ::post('/draft', [DraftRegistrationController::class, 'save']);
-    Route::get('/drafts/{competition_id}', [DraftRegistrationController::class, 'get']);
-    Route::post('/registrations/finalize', [FinalizeRegistrationController::class, 'store']);
-
 });
