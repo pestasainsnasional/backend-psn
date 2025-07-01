@@ -8,7 +8,7 @@ use App\Http\Controllers\TestimonialController;
 use App\Http\Controllers\Api\RegistrationController;
 use App\Http\Controllers\Api\DraftRegistrationController;
 use App\Http\Controllers\Api\FinalizeRegistrationController;
-
+use App\Http\Controllers\HistoryController;
 
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user();
@@ -39,4 +39,8 @@ Route::middleware('auth:sanctum')->prefix('step-registration')->group(function (
     Route::post('/3-pendamping', [RegistrationController::class, 'storeStep3']);
     Route::post('/4-dokumen', [RegistrationController::class, 'storeStep4']);
     Route::post('/finalisasi', [RegistrationController::class, 'finalize']);
+});
+
+Route::prefix('histories')->group(function() {
+    Route::get('/seasons', [HistoryController::class, 'listSeasons']);
 });
