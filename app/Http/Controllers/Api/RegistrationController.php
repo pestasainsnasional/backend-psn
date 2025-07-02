@@ -10,6 +10,7 @@ use App\Models\Participant;
 use App\Models\Registration;
 use App\Models\TeamMember;
 use Illuminate\Validation\Rule; 
+use Illuminate\Validation\ValidationException;
 
 class RegistrationController extends Controller
 {
@@ -23,7 +24,6 @@ class RegistrationController extends Controller
             
         return response()->json($draft);
     }
-
 
     public function storeStep1(Request $request)
     {
@@ -167,22 +167,42 @@ class RegistrationController extends Controller
         return response()->json(['message' => 'Dokumen berhasil diunggah.']);
     }
 
-    
     public function finalize(Request $request)
     {
         $validated = $request->validate([
-            'registration_id' => [
-                'required',
-                Rule::exists('registrations', 'id')->where(function ($query) use ($request) {
-                    return $query->where('user_id', $request->user()->id)
-                                 ->where('status', 'draft_step_4'); 
-                }),
-            ],
+            'registration_id' => 'required|exists:registrations,id,user_id,'.$request->user()->id,
         ]);
         
-        $registration = Registration::find($validated['registration_id']);
-        $registration->update(['status' => 'pending']);
-        
-        return response()->json(['message' => 'Pendaftaran Anda berhasil dikirim!']);
+        try {
+            
+            DB::transaction(function () use ($validated) {
+                $registration = Registration::with('competition.competitionType')->find($validated['registration_id']);
+                if (!$registration) {
+                    throw ValidationException::withMessages(['registration_id' => 'Pendaftaran tidak ditemukan.']);
+                }
+                $competitionType = $registration->competition->competitionType;
+                $competitionType = $competitionType->lockForUpdate()->first();
+                
+                if ($competitionType->current_batch !== 'regular') {
+                  
+                    if ($competitionType->slot_remaining <= 0) {
+                        throw ValidationException::withMessages(['kuota' => 'Mohon maaf, kuota untuk batch ini telah habis.']);
+                    }
+                    $competitionType->decrement('slot_remaining');
+                }
+                $registration->update(['status' => 'pending']);        
+            });
+
+        } catch (ValidationException $e) {
+           
+            return response()->json([
+                'message' => $e->getMessage(),
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Terjadi kesalahan saat finalisasi.', 'error' => $e->getMessage()], 500);
+        }
+        return response()->json(['message' => 'Pendaftaran Anda berhasil dikirim dan akan segera diverifikasi!']);
     }
+    
 }
