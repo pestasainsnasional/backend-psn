@@ -56,22 +56,31 @@ class RegistrationController extends Controller
     
     public function storeStep2(Request $request)
     {
-        
+
         $validated = $request->validate([
             'registration_id' => [
                 'required',
                 Rule::exists('registrations', 'id')->where(function ($query) use ($request) {
-                    return $query->where('user_id', $request->user()->id)
-                                 ->where('status', 'draft_step_1'); 
+                    return $query->where('user_id', $request->user()->id)->where('status', 'draft_step_1');                    
                 }),
             ],
-            'leader'          => 'required|array',
-            'leader.full_name'=> 'required|string',
-            'leader.nisn'     => 'required|string|unique:participants,nisn',
+            
+            'leader' => 'required|array',
+            'leader.full_name' => 'required|string|max:255',
+            'leader.place_of_birth' => 'required|string|max:255',
+            'leader.date_of_birth' => 'required|date',
+            'leader.address' => 'required|string',
+            'leader.nisn' => 'required|string|unique:participants,nisn',
+            'leader.phone_number' => 'required|string|unique:participants,phone_number',
             'leader.identity_card' => 'required|file|image|max:2048',
-            'members'         => 'nullable|array',
-            'members.*.full_name' => 'sometimes|required|string',
-            'members.*.nisn'      => 'sometimes|required|string|unique:participants,nisn,'.($request->input('leader.nisn') ?? 'NULL').',nisn',
+
+            'members' => 'nullable|array',
+            'members.*.full_name' => 'sometimes|required|string|max:255',
+            'members.*.place_of_birth' => 'sometimes|required|string|max:255',
+            'members.*.date_of_birth' => 'sometimes|required|date',
+            'members.*.address' => 'sometimes|required|string',
+            'members.*.nisn' => 'sometimes|required|string|unique:participants,nisn,'.($request->input('leader.nisn') ?? 'NULL').',nisn',
+            'members.*.phone_number' => 'sometimes|required|string|unique:participants,phone_number',
             'members.*.identity_card' => 'sometimes|required|file|image|max:2048',
         ]);
 
@@ -87,33 +96,29 @@ class RegistrationController extends Controller
                     $oldMember->delete();
                 }
             }
-            
-            $leader = Participant::create($request->input('leader'));
+
+            $leaderData = $request->input('leader');
+            $leader = Participant::create($leaderData);
             $leader->addMedia($request->file('leader.identity_card'))->toMediaCollection('identity-cards');
             TeamMember::create(['team_id' => $registration->team_id, 'participant_id' => $leader->id, 'role' => 'leader']);
             
             $registration->update(['participant_id' => $leader->id]);
-            
             if ($request->has('members')) {
                 foreach ($request->input('members') as $index => $memberData) {
                     $participantData = $memberData;
                     $memberFile = $request->file("members.{$index}.identity_card");
-                    
                     $member = Participant::create($participantData);
                     if ($memberFile) {
                         $member->addMedia($memberFile)->toMediaCollection('identity-cards');
                     }
-                    
                     TeamMember::create(['team_id' => $registration->team_id, 'participant_id' => $member->id, 'role' => 'member']);
                 }
             }
-
             $registration->update(['status' => 'draft_step_2']);
         });
 
         return response()->json(['message' => 'Data personil berhasil disimpan.']);
     }
-
 
     public function storeStep3(Request $request)
     {
