@@ -7,6 +7,7 @@ use App\Http\Controllers\CompetitionController;
 use App\Http\Controllers\TestimonialController;
 use App\Http\Controllers\Api\RegistrationController;
 use App\Http\Controllers\HistoryController;
+use App\Http\Controllers\Api\FaqController;
 
 
 
@@ -44,4 +45,7 @@ Route::prefix('histories')->group(function() {
     Route::get('/seasons', [HistoryController::class, 'listSeasons']);
     Route::get('/season/latest', [HistoryController::class, 'latestSeason']);
     Route::get('/season/{year}', [HistoryController::class, 'spesificSeason']);
+
+    Route::get('/faqs', [FaqController::class, 'index']);
+    Route::get('/faqs/{id}', [FaqController::class, 'show']);
 });
