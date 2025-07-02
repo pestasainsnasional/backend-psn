@@ -24,7 +24,8 @@ class CompetitionTypeResource extends Resource
                 Forms\Components\Select::make('type')
                     ->options([
                         'individu' => 'Individu',
-                        'group'      => 'Group',
+                        'group-2-orang'      => 'Group 2 Orang',
+                        'group-3-orang'      => 'Group 3 Orang',
                     ])
                     ->required(),
                 Forms\Components\Select::make('current_batch')
