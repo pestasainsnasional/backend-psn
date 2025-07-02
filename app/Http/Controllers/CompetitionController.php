@@ -10,8 +10,14 @@ use App\Models\Competition;
 
 class CompetitionController extends Controller
 {
-    public function index(): JsonResponse{
-        $competitions = Competition::with('competitionType')->latest()->get();
+    public function index(): JsonResponse
+    {
+        $competitions = Competition::with([
+            'media' => function ($query) {
+                $query->select('id', 'model_type', 'model_id', 'uuid', 'collection_name', 'name', 'file_name', 'disk');
+            },
+            'competitionType'
+        ])->latest()->get();
 
         return response()->json([
             'success' => true,
@@ -19,7 +25,8 @@ class CompetitionController extends Controller
         ]);
     }
 
-    public function show(Competition $competition): JsonResponse{
+    public function show(Competition $competition): JsonResponse
+    {
         $competition->load('competitionType');
 
         return response()->json([

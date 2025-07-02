@@ -7,14 +7,17 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
-class Competition extends Model
+class Competition extends Model implements HasMedia
 {
-    use HasFactory, HasUlids;
+    use HasFactory, HasUlids, InteractsWithMedia;
 
- 
     public $incrementing = false;
     protected $keyType = 'string';
+    protected $appends = ['image_urls'];
+    protected $hidden = ['media'];
 
     protected $fillable = [
         'competition_type_id',
@@ -38,5 +41,19 @@ class Competition extends Model
     public function registrations(): HasMany
     {
         return $this->hasMany(Registration::class);
+    }
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('competition_logo')
+            ->acceptsMimeTypes(['image/jpg', 'image/jpeg', 'image/png'])
+            ->singleFile();
+    }
+
+    public function getImageUrlsAttribute()
+    {
+        return $this->getMedia('competition_logo')->map(function ($media) {
+            return $media->original_url;
+        });
     }
 }

@@ -5,9 +5,11 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\CompetitionResource\Pages;
 use App\Models\Competition;
 use Filament\Forms;
+use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Columns\SpatieMediaLibraryImageColumn;
 use Filament\Tables\Table;
 
 
@@ -25,6 +27,14 @@ class CompetitionResource extends Resource
             ->schema([
                 Forms\Components\Card::make()
                     ->schema([
+                        SpatieMediaLibraryFileUpload::make('competition_logo')
+                            ->collection('competition_logo') 
+                            ->label('Logo Kompetisi')
+                            ->image() 
+                            ->imageEditor() 
+                            ->responsiveImages() 
+                            ->columnSpanFull(),
+
                         Forms\Components\Select::make('competition_type_id')
                             ->relationship('competitionType', 'type') 
                             ->searchable()
@@ -62,6 +72,11 @@ class CompetitionResource extends Resource
     {
         return $table
             ->columns([
+                SpatieMediaLibraryImageColumn::make('competition_logo')
+                    ->collection('competition_logo')
+                    ->label('Foto')
+                    ->circular(), 
+
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nama Kompetisi')
                     ->searchable()
