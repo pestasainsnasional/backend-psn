@@ -9,7 +9,9 @@ use App\Models\Team;
 use App\Models\Participant;
 use App\Models\Registration;
 use App\Models\TeamMember;
-use Illuminate\Validation\Rule; 
+use App\Models\CompetitionType;
+use App\Models\Competition;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class RegistrationController extends Controller
@@ -53,73 +55,76 @@ class RegistrationController extends Controller
         return response()->json(['message' => 'Langkah 1 berhasil disimpan.', 'registration_id' => $registration->id]);
     }
 
-    
     public function storeStep2(Request $request)
     {
-
         $validated = $request->validate([
             'registration_id' => [
                 'required',
                 Rule::exists('registrations', 'id')->where(function ($query) use ($request) {
-                    return $query->where('user_id', $request->user()->id)->where('status', 'draft_step_1');                    
+                    return $query->where('user_id', $request->user()->id)
+                                 ->whereIn('status', ['draft_step_1', 'draft_step_2', 'draft_step_3', 'draft_step_4']);
                 }),
             ],
-            
+    
             'leader' => 'required|array',
             'leader.full_name' => 'required|string|max:255',
             'leader.place_of_birth' => 'required|string|max:255',
             'leader.date_of_birth' => 'required|date',
             'leader.address' => 'required|string',
-            'leader.nisn' => 'required|string|unique:participants,nisn',
-            'leader.phone_number' => 'required|string|unique:participants,phone_number',
-            'leader.identity_card' => 'required|file|image|max:2048',
+            'leader.nisn' => 'required|string',
+            'leader.phone_number' => 'required|string',
+            'leader.identity_card' => 'sometimes|file|image|max:2048',
 
             'members' => 'nullable|array',
-            'members.*.full_name' => 'sometimes|required|string|max:255',
-            'members.*.place_of_birth' => 'sometimes|required|string|max:255',
+            'members.*.full_name' => 'sometimes|required|string',
+            'members.*.nisn' => 'sometimes|required|string|different:leader.nisn',
+            'members.*.phone_number' => 'sometimes|required|string|different:leader.phone_number',
+            'members.*.place_of_birth' => 'sometimes|required|string',
             'members.*.date_of_birth' => 'sometimes|required|date',
             'members.*.address' => 'sometimes|required|string',
-            'members.*.nisn' => 'sometimes|required|string|unique:participants,nisn,'.($request->input('leader.nisn') ?? 'NULL').',nisn',
-            'members.*.phone_number' => 'sometimes|required|string|unique:participants,phone_number',
-            'members.*.identity_card' => 'sometimes|required|file|image|max:2048',
+            'members.*.identity_card' => 'sometimes|file|image|max:2048',
         ]);
+        
+        $allNisns = collect([$request->input('leader.nisn')])->merge($request->input('members.*.nisn'));
+        if ($allNisns->duplicates()->isNotEmpty()) {
+            throw ValidationException::withMessages(['nisn' => 'NISN tidak boleh sama antar peserta dalam satu tim.']);
+        }
+        $allPhones = collect([$request->input('leader.phone_number')])->merge($request->input('members.*.phone_number'));
+        if ($allPhones->duplicates()->isNotEmpty()) {
+            throw ValidationException::withMessages(['phone_number' => 'Nomor telepon tidak boleh sama antar peserta dalam satu tim.']);
+        }
 
         $registration = Registration::find($validated['registration_id']);
 
         DB::transaction(function () use ($request, $registration) {
-            $leaderNisn = $request->input('leader.nisn');
-            $oldMembers = $registration->team->teamMembers()->with('participant')->get();
-            foreach ($oldMembers as $oldMember) {
-                if ($oldMember->participant && $oldMember->participant->nisn !== $leaderNisn) {
-                    $oldMember->participant->delete();
-                } else {
-                    $oldMember->delete();
+            $registration->team->teamMembers()->each(function ($teamMember) {
+                if ($teamMember->participant) {
+                    $teamMember->participant->delete(); 
                 }
+            });
+            $leader = Participant::create($request->input('leader'));
+            if ($request->hasFile('leader.identity_card')) {
+                $leader->addMedia($request->file('leader.identity_card'))->toMediaCollection('identity-cards');
             }
-
-            $leaderData = $request->input('leader');
-            $leader = Participant::create($leaderData);
-            $leader->addMedia($request->file('leader.identity_card'))->toMediaCollection('identity-cards');
             TeamMember::create(['team_id' => $registration->team_id, 'participant_id' => $leader->id, 'role' => 'leader']);
             
-            $registration->update(['participant_id' => $leader->id]);
             if ($request->has('members')) {
                 foreach ($request->input('members') as $index => $memberData) {
-                    $participantData = $memberData;
-                    $memberFile = $request->file("members.{$index}.identity_card");
-                    $member = Participant::create($participantData);
-                    if ($memberFile) {
-                        $member->addMedia($memberFile)->toMediaCollection('identity-cards');
+                    $member = Participant::create($memberData);
+                    if ($request->hasFile("members.{$index}.identity_card")) {
+                        $member->addMedia($request->file("members.{$index}.identity_card"))->toMediaCollection('identity-cards');
                     }
                     TeamMember::create(['team_id' => $registration->team_id, 'participant_id' => $member->id, 'role' => 'member']);
                 }
             }
-            $registration->update(['status' => 'draft_step_2']);
+            $registration->update([
+                'participant_id' => $leader->id,
+                'status' => 'draft_step_2'
+            ]);
         });
-
-        return response()->json(['message' => 'Data personil berhasil disimpan.']);
+        return response()->json(['message' => 'Data personil berhasil diperbarui.']);
     }
-
+    
     public function storeStep3(Request $request)
     {
         $validated = $request->validate([
@@ -127,7 +132,7 @@ class RegistrationController extends Controller
                 'required',
                 Rule::exists('registrations', 'id')->where(function ($query) use ($request) {
                     return $query->where('user_id', $request->user()->id)
-                                 ->where('status', 'draft_step_2'); 
+                                 ->where('status', ['draft_step_2', 'draft_step_3', 'draft_step_4']); 
                 }),
             ],
             'companion_teacher_name' => 'required|string',
@@ -142,7 +147,6 @@ class RegistrationController extends Controller
         return response()->json(['message' => 'Data pendamping berhasil disimpan.']);
     }
 
-   
     public function storeStep4(Request $request)
     {
         $validated = $request->validate([
@@ -150,19 +154,16 @@ class RegistrationController extends Controller
                 'required',
                 Rule::exists('registrations', 'id')->where(function ($query) use ($request) {
                     return $query->where('user_id', $request->user()->id)
-                                 ->where('status', 'draft_step_3'); 
+                                 ->where('status', ['draft_step_3', 'draft_step_4']); 
                 }),
             ],
-            'surat_pernyataan' => 'required|file|mimes:pdf|max:2048',
             'bukti_pembayaran' => 'required|file|image|max:2048',
         ]);
         
         $registration = Registration::find($validated['registration_id']);
         $team = $registration->team;
         
-        $team->addMediaFromRequest('surat_pernyataan')->toMediaCollection('statement-letters');
         $team->addMediaFromRequest('bukti_pembayaran')->toMediaCollection('payment-proofs');
-
         $registration->update(['status' => 'draft_step_4']);
         return response()->json(['message' => 'Dokumen berhasil diunggah.']);
     }
@@ -170,13 +171,19 @@ class RegistrationController extends Controller
     public function finalize(Request $request)
     {
         $validated = $request->validate([
-            'registration_id' => 'required|exists:registrations,id,user_id,'.$request->user()->id,
+            'registration_id' => [
+                'required',
+                Rule::exists('registrations', 'id')->where(function ($query) use ($request) {
+                    return $query->where('user_id', $request->user()->id)
+                                 ->where('status', 'draft_step_4');
+                }),
+            ],
         ]);
         
         try {
-            
             DB::transaction(function () use ($validated) {
                 $registration = Registration::with('competition.competitionType')->find($validated['registration_id']);
+
                 if (!$registration) {
                     throw ValidationException::withMessages(['registration_id' => 'Pendaftaran tidak ditemukan.']);
                 }
@@ -184,17 +191,15 @@ class RegistrationController extends Controller
                 $competitionType = $competitionType->lockForUpdate()->first();
                 
                 if ($competitionType->current_batch !== 'regular') {
-                  
                     if ($competitionType->slot_remaining <= 0) {
                         throw ValidationException::withMessages(['kuota' => 'Mohon maaf, kuota untuk batch ini telah habis.']);
                     }
                     $competitionType->decrement('slot_remaining');
                 }
-                $registration->update(['status' => 'pending']);        
+                $registration->update(['status' => 'pending']);
             });
 
         } catch (ValidationException $e) {
-           
             return response()->json([
                 'message' => $e->getMessage(),
                 'errors' => $e->errors(),
@@ -204,5 +209,4 @@ class RegistrationController extends Controller
         }
         return response()->json(['message' => 'Pendaftaran Anda berhasil dikirim dan akan segera diverifikasi!']);
     }
-    
 }
