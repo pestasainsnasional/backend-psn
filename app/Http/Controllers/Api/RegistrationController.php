@@ -73,6 +73,8 @@ class RegistrationController extends Controller
             'leader.address' => 'required|string',
             'leader.nisn' => 'required|string',
             'leader.phone_number' => 'required|string',
+            'leader.twibbon_proof' => 'sometimes|required|file|image|max:2048',
+            'leader.passport_photo' => 'sometimes|required|file|image|max:2048',
             'leader.identity_card' => 'sometimes|file|image|max:2048',
 
             'members' => 'nullable|array',
@@ -82,6 +84,8 @@ class RegistrationController extends Controller
             'members.*.place_of_birth' => 'sometimes|required|string',
             'members.*.date_of_birth' => 'sometimes|required|date',
             'members.*.address' => 'sometimes|required|string',
+            'members.*.twibbon_proof' => 'sometimes|required|file|image|max:2048',
+            'members.*.passport_photo' => 'sometimes|required|file|image|max:2048',
             'members.*.identity_card' => 'sometimes|file|image|max:2048',
         ]);
         
@@ -103,17 +107,32 @@ class RegistrationController extends Controller
                 }
             });
             $leader = Participant::create($request->input('leader'));
+
+            if ($request->hasFile('leader.twibbon_proof')) {
+                $leader->addMedia($request->file('leader.twibbon_proof'))->toMediaCollection('twibbon-proofs');
+            }
+            if ($request->hasFile('leader.passport_photo')) {
+                $leader->addMedia($request->file('leader.passport_photo'))->toMediaCollection('passport-photos');
+            }
             if ($request->hasFile('leader.identity_card')) {
                 $leader->addMedia($request->file('leader.identity_card'))->toMediaCollection('identity-cards');
             }
+            
             TeamMember::create(['team_id' => $registration->team_id, 'participant_id' => $leader->id, 'role' => 'leader']);
             
             if ($request->has('members')) {
                 foreach ($request->input('members') as $index => $memberData) {
                     $member = Participant::create($memberData);
+                    if ($request->hasFile("members.{$index}.twibbon_proof")) {
+                        $member->addMedia($request->file("members.{$index}.twibbon_proof"))->toMediaCollection('twibbon-proofs');
+                    }
+                    if ($request->hasFile("members.{$index}.passport_photo")) {
+                        $member->addMedia($request->file("members.{$index}.passport_photo"))->toMediaCollection('passport-photos');
+                    }
                     if ($request->hasFile("members.{$index}.identity_card")) {
                         $member->addMedia($request->file("members.{$index}.identity_card"))->toMediaCollection('identity-cards');
                     }
+                   
                     TeamMember::create(['team_id' => $registration->team_id, 'participant_id' => $member->id, 'role' => 'member']);
                 }
             }
