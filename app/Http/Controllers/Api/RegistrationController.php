@@ -122,7 +122,7 @@ class RegistrationController extends Controller
                 'status' => 'draft_step_2'
             ]);
         });
-        return response()->json(['message' => 'Data personil berhasil diperbarui.']);
+        return response()->json(['message' => 'Langkah 2 berhasil disimpan.', 'registration_id' => $registration->id]);
     }
     
     public function storeStep3(Request $request)
@@ -144,7 +144,7 @@ class RegistrationController extends Controller
         $registration->team()->update($request->except('registration_id'));
         $registration->update(['status' => 'draft_step_3']);
 
-        return response()->json(['message' => 'Data pendamping berhasil disimpan.']);
+        return response()->json(['message' => 'Langkah 3 berhasil disimpan.', 'registration_id' => $registration->id]);
     }
 
     public function storeStep4(Request $request)
@@ -165,7 +165,7 @@ class RegistrationController extends Controller
         
         $team->addMediaFromRequest('bukti_pembayaran')->toMediaCollection('payment-proofs');
         $registration->update(['status' => 'draft_step_4']);
-        return response()->json(['message' => 'Dokumen berhasil diunggah.']);
+        return response()->json(['message' => 'Langkah 4 berhasil disimpan.', 'registration_id' => $registration->id]);
     }
 
     public function finalize(Request $request)

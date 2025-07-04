@@ -21,7 +21,7 @@ class FaqController extends Controller
                     ->get(['id', 'question', 'answer']);
 
         return response()->json([
-            'message' => 'FAQs retrieved successfully',
+            'success' => true,
             'data' => $faqs,
         ], 200);
     }
@@ -43,7 +43,7 @@ class FaqController extends Controller
         }
 
         return response()->json([
-            'message' => 'FAQ retrieved successfully',
+            'success' => true,
             'data' => $faq->only(['id', 'question', 'answer']),
         ], 200);
     }
