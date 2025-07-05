@@ -19,7 +19,14 @@ class Registration extends Model
         'participant_id',
         'competition_id',
         'team_id',
+        'payment_unique_code',
+        'payment_code_expires_at',
         'status',
+        
+    ];
+
+    protected $casts = [
+        'payment_code_expires_at' => 'datetime',
     ];
 
     public function user(): BelongsTo

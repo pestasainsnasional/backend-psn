@@ -33,11 +33,6 @@ class Team extends Model implements HasMedia
         return $this->hasMany(TeamMember::class);
     }
 
-    public function documentTeam(): HasOne
-    {
-        return $this->hasOne(DocumentTeam::class);
-    }
-
     public function registration(): HasOne
     {
         return $this->hasOne(Registration::class);
