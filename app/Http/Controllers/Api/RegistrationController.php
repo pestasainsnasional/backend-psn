@@ -166,27 +166,62 @@ class RegistrationController extends Controller
         return response()->json(['message' => 'Langkah 3 berhasil disimpan.', 'registration_id' => $registration->id]);
     }
 
+    public function getPaymentCode(Request $request, string $registration_id)
+    {
+        $registration = $request->user()->registrations() ->where('id', $registration_id)
+                                ->whereIn('status', ['draft_step_3', 'draft_step_4'])  
+                                ->firstOrFail();
+
+        if ($registration->payment_unique_code && $registration->payment_code_expires_at > now()) {
+            return response()->json([
+                'unique_code' => $registration->payment_unique_code,
+                'expires_at' => $registration->payment_code_expires_at->toIso8601String(),
+            ]);
+        }
+
+        $randomNumbers = str_pad(rand(0, 9999), 4, '0', STR_PAD_LEFT);
+        $newCode = 'PSN' . $randomNumbers;
+        $expiresAt = now()->addMinutes(1); 
+
+        $registration->update([
+            'payment_unique_code' => $newCode,
+            'payment_code_expires_at' => $expiresAt,
+        ]);
+
+        return response()->json([
+            'unique_code' => $newCode,
+            'expires_at' => $expiresAt->toIso8601String(),
+        ]);
+    }
+
     public function storeStep4(Request $request)
     {
+        $registration = Registration::with('team')->find($request->input('registration_id'));
+        if (!$registration || $registration->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Pendaftaran tidak ditemukan.'], 404);
+        }
+
+        $team = $registration->team;
         $validated = $request->validate([
-            'registration_id' => [
-                'required',
-                Rule::exists('registrations', 'id')->where(function ($query) use ($request) {
-                    return $query->where('user_id', $request->user()->id)
-                                 ->where('status', ['draft_step_3', 'draft_step_4']); 
-                }),
-            ],
-            'bukti_pembayaran' => 'required|file|image|max:2048',
+            'registration_id' => 'required',
+            'bukti_pembayaran' => [Rule::requiredIf(!$team->hasMedia('payment-proofs')),'file', 'image','max:2048' ],
         ]);
         
-        $registration = Registration::find($validated['registration_id']);
-        $team = $registration->team;
+        if ($registration->payment_code_expires_at < now()) {
+            throw ValidationException::withMessages([
+                'payment_code' => 'Kode pembayaran Anda telah kedaluwarsa. Silakan muat ulang halaman untuk mendapatkan kode baru.',
+            ]);
+        }
+
+        if ($request->hasFile('bukti_pembayaran')) {
+            $team->clearMediaCollection('payment-proofs');
+            $team->addMediaFromRequest('bukti_pembayaran')->toMediaCollection('payment-proofs');
+        }
         
-        $team->addMediaFromRequest('bukti_pembayaran')->toMediaCollection('payment-proofs');
         $registration->update(['status' => 'draft_step_4']);
         return response()->json(['message' => 'Langkah 4 berhasil disimpan.', 'registration_id' => $registration->id]);
     }
-
+    
     public function finalize(Request $request)
     {
         $validated = $request->validate([
