@@ -26,10 +26,6 @@ Route::controller(TestimonialController::class)->group(function() {
     Route::get('/testimonials', 'index');
 });
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
-});
-
 Route::middleware('auth:sanctum')->prefix('step-registration')->group(function () {
     Route::get('/draf/{competition_id}', [RegistrationController::class, 'getDraft']);
     Route::post('/1-tim', [RegistrationController::class, 'storeStep1']);
