@@ -17,13 +17,14 @@ class LoginController extends Controller
 
         $user->tokens()->delete();
         $token = $user->createToken('api-token-' . $user->name)->plainTextToken;
-        
+
         if (is_null($user->email_verified_at)) {
             return response()->json([
                 'token' => $token,
+                'user' => $user,
                 'message' => 'Email belum diverifikasi. Silakan cek email kamu untuk verifikasi.',
-            ], 202); 
-        }
+            ], 202);
+        }  
 
         return response()->json([
             'user' => $user,

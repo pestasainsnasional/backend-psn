@@ -39,6 +39,7 @@ class RegisteredUserController extends Controller
 
         return response()->json([
             'token' => $token,
+            'user' => $user,
             'message' => 'Email belum diverifikasi. Silakan cek email kamu untuk verifikasi.',
         ], 202);
     }

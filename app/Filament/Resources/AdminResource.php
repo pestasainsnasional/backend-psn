@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\AdminResource\Pages;
+use App\Notifications\AdminVerificationNotification;
 use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -15,6 +16,7 @@ use Spatie\Permission\Models\Role;
 use Filament\Forms\Components\Select;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Notifications\Notification;
+use Filament\Tables\Actions\ActionGroup;
 use Illuminate\Support\Facades\Auth;
 
 class AdminResource extends Resource
@@ -44,18 +46,18 @@ class AdminResource extends Resource
                     ->label('Email Admin'),
                 Forms\Components\TextInput::make('password')
                     ->password()
-                    ->required(fn (string $operation): bool => $operation === 'create')
-                    ->dehydrated(fn (?string $state): bool => filled($state))
+                    ->required(fn(string $operation): bool => $operation === 'create')
+                    ->dehydrated(fn(?string $state): bool => filled($state))
                     ->confirmed()
                     ->maxLength(255)
                     ->label('Password Baru'),
                 Forms\Components\TextInput::make('password_confirmation')
                     ->password()
-                    ->required(fn (string $operation): bool => $operation === 'create')
+                    ->required(fn(string $operation): bool => $operation === 'create')
                     ->maxLength(255)
-                    ->dehydrated(fn (?string $state): bool => filled($state))
+                    ->dehydrated(fn(?string $state): bool => filled($state))
                     ->label('Konfirmasi Password'),
-                
+
                 Select::make('roles')
                     ->relationship('roles', 'name')
                     ->multiple()
@@ -63,8 +65,8 @@ class AdminResource extends Resource
                     ->searchable()
                     ->required()
                     ->label('Role (Peran)')
-                    ->default(fn (string $operation) => $operation === 'create' ? [Role::where('name', 'admin')->first()?->id] : null)
-                    ->disabled(fn (string $operation) => $operation === 'edit' && !auth()->user()->hasRole('super_admin')),
+                    ->default(fn(string $operation) => $operation === 'create' ? [Role::where('name', 'admin')->first()?->id] : null)
+                    ->disabled(fn(string $operation) => $operation === 'edit' && !auth()->user()->hasRole('super_admin')),
             ]);
     }
 
@@ -87,11 +89,9 @@ class AdminResource extends Resource
                 TextColumn::make('roles.name')
                     ->label('Roles')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'admin' => 'success',
-                        'participant' => 'info',
-                        default => 'gray',
-                    })
+                    ->color(
+                        'success'
+                    )
                     ->toggleable(isToggledHiddenByDefault: false),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
@@ -105,35 +105,32 @@ class AdminResource extends Resource
                     ->label('Diperbarui Pada'),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('roles')
-                    ->relationship('roles', 'name')
-                    ->preload()
-                    ->label('Filter Berdasarkan Role')
-                    ->default(Role::where('name', 'admin')->first()?->id),
-                
                 Tables\Filters\TernaryFilter::make('email_verified_at')
                     ->nullable()
                     ->label('Status Verifikasi Email')
                     ->trueLabel('Terverifikasi')
                     ->falseLabel('Belum Terverifikasi')
-                    ->default(false),
+                    ->default(''),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
-                Tables\Actions\Action::make('resend_verification')
-                    ->label('Kirim Ulang Verifikasi Email')
-                    ->icon('heroicon-o-envelope')
-                    ->color('warning')
-                    ->hidden(fn (User $record): bool => $record->hasVerifiedEmail())
-                    ->action(function (User $record) {
-                        $record->sendEmailVerificationNotification();
-                        Notification::make()
-                            ->title('Email Verifikasi Dikirim Ulang')
-                            ->body("Email verifikasi telah dikirim ulang ke {$record->email}.")
-                            ->success()
-                            ->send();
-                    }),
+                ActionGroup::make([
+                    Tables\Actions\EditAction::make(),
+                    Tables\Actions\DeleteAction::make(),
+                    Tables\Actions\Action::make('resend_verification')
+                        ->label('Kirim Ulang Verifikasi Email')
+                        ->icon('heroicon-o-envelope')
+                        ->color('warning')
+                        ->hidden(fn(User $record): bool => $record->hasVerifiedEmail())
+                        ->action(function (User $record) {
+                            $record->notify(new AdminVerificationNotification);
+
+                            Notification::make()
+                                ->title('Email Verifikasi Dikirim Ulang')
+                                ->body("Email verifikasi telah dikirim ulang ke {$record->email}.")
+                                ->success()
+                                ->send();
+                        }),
+                ]),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -146,7 +143,7 @@ class AdminResource extends Resource
                             $count = 0;
                             foreach ($records as $record) {
                                 if (!$record->hasVerifiedEmail()) {
-                                    $record->sendEmailVerificationNotification();
+                                    $record->notify(new AdminVerificationNotification);;
                                     $count++;
                                 }
                             }

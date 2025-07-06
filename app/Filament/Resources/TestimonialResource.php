@@ -19,7 +19,8 @@ class TestimonialResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-chat-bubble-left-right';
     protected static ?string $navigationLabel = 'Testimoni';
-    protected static ?string $navigationGroup = 'Testimonial';
+    protected static ?string $navigationGroup = 'Others';
+
 
     public static function form(Form $form): Form
     {
@@ -28,11 +29,11 @@ class TestimonialResource extends Resource
                 Forms\Components\Card::make()
                     ->schema([
                         SpatieMediaLibraryFileUpload::make('avatar')
-                            ->collection('avatar') 
+                            ->collection('avatar')
                             ->label('Foto Orang yang Memberi Testimoni')
-                            ->image() 
-                            ->imageEditor() 
-                            ->responsiveImages() 
+                            ->image()
+                            ->imageEditor()
+                            ->responsiveImages()
                             ->columnSpanFull(),
 
                         Forms\Components\TextInput::make('name')
@@ -61,7 +62,7 @@ class TestimonialResource extends Resource
                 SpatieMediaLibraryImageColumn::make('avatar')
                     ->collection('avatar')
                     ->label('Foto')
-                    ->circular(), 
+                    ->circular(),
 
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nama')
@@ -74,16 +75,14 @@ class TestimonialResource extends Resource
                 Tables\Columns\TextColumn::make('description')
                     ->label('Testimoni')
                     ->limit(50)
-                    ->tooltip(fn (Testimonial $record): string => $record->description),
+                    ->tooltip(fn(Testimonial $record): string => $record->description),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->filters([
-
-            ])
+            ->filters([])
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
@@ -97,9 +96,7 @@ class TestimonialResource extends Resource
 
     public static function getRelations(): array
     {
-        return [
-
-        ];
+        return [];
     }
 
     public static function getPages(): array

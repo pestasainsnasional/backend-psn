@@ -27,7 +27,7 @@ class CompetitionController extends Controller
 
     public function show(Competition $competition): JsonResponse
     {
-        $competition->load('competitionType');
+        $competition->load('competitionType', 'timelines');
 
         return response()->json([
             'success' => true,

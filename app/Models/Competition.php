@@ -30,7 +30,7 @@ class Competition extends Model implements HasMedia
 
     protected function casts(): array
     {
-        return [ 'is_active' => 'boolean', ];
+        return ['is_active' => 'boolean',];
     }
 
     public function competitionType(): BelongsTo
@@ -42,6 +42,12 @@ class Competition extends Model implements HasMedia
     {
         return $this->hasMany(Registration::class);
     }
+
+    public function timelines()
+    {
+        return $this->hasMany(CompetitionTimeline::class)->orderBy('order');
+    }
+
 
     public function registerMediaCollections(): void
     {
