@@ -24,7 +24,7 @@ class LoginController extends Controller
                 'user' => $user,
                 'message' => 'Email belum diverifikasi. Silakan cek email kamu untuk verifikasi.',
             ], 202);
-        }
+        }  
 
         return response()->json([
             'user' => $user,
