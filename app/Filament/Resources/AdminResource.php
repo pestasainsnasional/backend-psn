@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\AdminResource\Pages;
+use App\Notifications\AdminVerificationNotification;
 use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -15,6 +16,7 @@ use Spatie\Permission\Models\Role;
 use Filament\Forms\Components\Select;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Notifications\Notification;
+use Filament\Tables\Actions\ActionGroup;
 use Illuminate\Support\Facades\Auth;
 
 class AdminResource extends Resource
@@ -108,24 +110,27 @@ class AdminResource extends Resource
                     ->label('Status Verifikasi Email')
                     ->trueLabel('Terverifikasi')
                     ->falseLabel('Belum Terverifikasi')
-                    ->default(false),
+                    ->default(''),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
-                Tables\Actions\Action::make('resend_verification')
-                    ->label('Kirim Ulang Verifikasi Email')
-                    ->icon('heroicon-o-envelope')
-                    ->color('warning')
-                    ->hidden(fn(User $record): bool => $record->hasVerifiedEmail())
-                    ->action(function (User $record) {
-                        $record->sendEmailVerificationNotification();
-                        Notification::make()
-                            ->title('Email Verifikasi Dikirim Ulang')
-                            ->body("Email verifikasi telah dikirim ulang ke {$record->email}.")
-                            ->success()
-                            ->send();
-                    }),
+                ActionGroup::make([
+                    Tables\Actions\EditAction::make(),
+                    Tables\Actions\DeleteAction::make(),
+                    Tables\Actions\Action::make('resend_verification')
+                        ->label('Kirim Ulang Verifikasi Email')
+                        ->icon('heroicon-o-envelope')
+                        ->color('warning')
+                        ->hidden(fn(User $record): bool => $record->hasVerifiedEmail())
+                        ->action(function (User $record) {
+                            $record->notify(new AdminVerificationNotification);
+
+                            Notification::make()
+                                ->title('Email Verifikasi Dikirim Ulang')
+                                ->body("Email verifikasi telah dikirim ulang ke {$record->email}.")
+                                ->success()
+                                ->send();
+                        }),
+                ]),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -138,7 +143,7 @@ class AdminResource extends Resource
                             $count = 0;
                             foreach ($records as $record) {
                                 if (!$record->hasVerifiedEmail()) {
-                                    $record->sendEmailVerificationNotification();
+                                    $record->notify(new AdminVerificationNotification);;
                                     $count++;
                                 }
                             }
