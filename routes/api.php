@@ -8,6 +8,7 @@ use App\Http\Controllers\TestimonialController;
 use App\Http\Controllers\Api\RegistrationController;
 use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\Api\FaqController;
+use App\Http\Controllers\Api\SponsorController;
 
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user();
@@ -45,3 +46,5 @@ Route::controller(FaqController::class)->group(function() {
     Route::get('/faqs', 'index');
     Route::get('/faqs/{id}', 'show');
 });
+
+Route::get('/sponsors', [SponsorController::class, 'index']);
