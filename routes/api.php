@@ -35,6 +35,7 @@ Route::middleware('auth:sanctum')->prefix('step-registration')->group(function (
     Route::post('/1-tim', [RegistrationController::class, 'storeStep1']);
     Route::post('/2-personil', [RegistrationController::class, 'storeStep2']);
     Route::post('/3-pendamping', [RegistrationController::class, 'storeStep3']);
+    Route::get('/payment-code/{registration_id}', [RegistrationController::class, 'getPaymentCode']);
     Route::post('/4-dokumen', [RegistrationController::class, 'storeStep4']);
     Route::post('/finalisasi', [RegistrationController::class, 'finalize']);
 });

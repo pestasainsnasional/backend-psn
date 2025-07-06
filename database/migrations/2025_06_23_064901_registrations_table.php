@@ -15,7 +15,7 @@ return new class extends Migration
             $table->foreignUlid('participant_id')->nullable()->constrained()->onDelete('cascade');
             $table->foreignUlid('competition_id')->constrained()->onDelete('cascade');
             $table->foreignUlid('team_id')->constrained()->onDelete('cascade');
-            $table->string('payment_unique_code', 3)->nullable();
+            $table->string('payment_unique_code', 7)->nullable();
             $table->timestamp('payment_code_expires_at')->nullable();
             $table->enum('status', ['draft_step_1','draft_step_2','draft_step_3','draft_step_4', 'pending', 'verified', 'rejected'])->default('draft_step_1');
             $table->timestamps();
