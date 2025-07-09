@@ -160,11 +160,24 @@ class RegistrationController extends Controller
             'companion_teacher_nip' => 'required|string',
         ]);
         
-        $registration = Registration::find($validated['registration_id']);
-        $registration->team()->update($request->except('registration_id'));
-        $registration->update(['status' => 'draft_step_3']);
+        $registration = Registration::with('competition.competitionType')->find($validated['registration_id']);
+        $competitionType = $registration->competition->competitionType;
 
+        if($competitionType->current_batch !== 'regular' && $registration->status !== 'draft_step_4') {
+              if ($competitionType->slot_remaining <= 0) {
+                throw ValidationException::withMessages([
+                    'kuota' => 'Mohon maaf, kuota untuk kompetisi ini telah habis. Anda tidak dapat melanjutkan ke tahap pembayaran.',
+                ]);
+            }
+        }
+
+        $registration->team()->update($request->except('registration_id'));
+        
+        if ($registration->status === 'draft_step_2') {
+            $registration->update(['status' => 'draft_step_3']);
+        }
         return response()->json(['message' => 'Langkah 3 berhasil disimpan.', 'registration_id' => $registration->id]);
+
     }
 
     public function getPaymentCode(Request $request, string $registration_id)
