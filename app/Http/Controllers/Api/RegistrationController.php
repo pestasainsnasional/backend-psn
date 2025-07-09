@@ -13,6 +13,7 @@ use App\Models\CompetitionType;
 use App\Models\Competition;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use App\Notifications\RegistrationSubmitted;
 
 class RegistrationController extends Controller
 {
@@ -251,6 +252,8 @@ class RegistrationController extends Controller
                     $competitionType->decrement('slot_remaining');
                 }
                 $registration->update(['status' => 'pending']);
+
+                $registration->user->notify(new RegistrationSubmitted($registration));
             });
 
         } catch (ValidationException $e) {

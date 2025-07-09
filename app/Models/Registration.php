@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Notifications\RegistrationVerified;
 
 class Registration extends Model
 {
@@ -29,6 +30,18 @@ class Registration extends Model
         'payment_code_expires_at' => 'datetime',
     ];
 
+
+    protected static function booted(): void
+    {
+        static::updated (function(Registration $registration)
+        {
+            if ($registration -> isDirty('status')&& $registration-> status === 'verified'){
+                $registration->user->notify(new RegistrationVerified($registration));
+            }
+        
+        });
+    }
+    
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
