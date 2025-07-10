@@ -12,16 +12,13 @@ use Filament\Models\Contracts\FilamentUser;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Spatie\MediaLibrary\HasMedia; 
+use Spatie\MediaLibrary\InteractsWithMedia; 
 
-class User extends Authenticatable implements FilamentUser, MustVerifyEmail
+class User extends Authenticatable implements FilamentUser, MustVerifyEmail, HasMedia
 {
-    use HasApiTokens, HasUlids, HasRoles, HasFactory, Notifiable;
+    use HasApiTokens, HasUlids, HasRoles, HasFactory, Notifiable, InteractsWithMedia;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
     protected $fillable = [
         'name',
         'email',
@@ -30,26 +27,15 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
     ];
 
     protected $with = ['roles'];
+    protected $appends =['avatar_url'];
 
 
     public $incrementing = false;
     protected $keyType = 'string';
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
-    protected $hidden = [
-        'password',
-        'remember_token',
-    ];
+    protected $hidden = ['password','remember_token',];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
+
     protected function casts(): array
     {
         return [
@@ -62,6 +48,24 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
     {
         return $this->hasRole('admin') && $this->hasVerifiedEmail();
     }
+
+    public function registerMediaCollections(): void
+    {
+        $this
+            ->addMediaCollection('avatars')
+            ->singleFile(); 
+    }
+
+    public function getAvatarUrlAttribute()
+    {
+        if ($this->hasMedia('avatars')){
+            return $this->getFirstMediaUrl('avatars');
+        }
+        
+        return 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&background=random';
+
+    }
+
 
     public function createdCompetitionTypes(): HasMany
     {
