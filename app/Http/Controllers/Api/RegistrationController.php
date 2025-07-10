@@ -179,9 +179,11 @@ class RegistrationController extends Controller
 
     }
 
-    public function getPaymentCode(Request $request, string $registration_id)
+        public function getPaymentCode(Request $request, string $registration_id)
     {
-        $registration = $request->user()->registrations() ->where('id', $registration_id)
+        $registration = $request->user()->registrations()
+                                ->with('team') 
+                                ->where('id', $registration_id)
                                 ->whereIn('status', ['draft_step_3', 'draft_step_4'])  
                                 ->firstOrFail();
 
@@ -193,7 +195,10 @@ class RegistrationController extends Controller
         }
 
         $randomNumbers = str_pad(rand(0, 9999), 4, '0', STR_PAD_LEFT);
-        $newCode = 'PSN' . $randomNumbers;
+        $schoolName = $registration->team->school_name;
+        $sanitizedSchoolName = strtoupper(preg_replace('/[^a-zA-Z0-9]/', '', $schoolName));
+        $newCode = 'PSN' . $randomNumbers . '_' . $sanitizedSchoolName;
+
         $expiresAt = now()->addMinutes(1); 
 
         $registration->update([
