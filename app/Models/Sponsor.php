@@ -14,13 +14,14 @@ class Sponsor extends Model implements HasMedia
 
     protected $fillable = [
         'name',
+        'type',
         'description',
     ];
 
     public function registerMediaCollections(): void
     {
         $this
-            ->addMediaCollection('logo sponsor')
+            ->addMediaCollection('logo_sponsor')
             ->singleFile();
     }
 }

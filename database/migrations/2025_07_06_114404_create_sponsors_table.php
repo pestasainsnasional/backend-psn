@@ -11,6 +11,7 @@ return new class extends Migration
         Schema::create('sponsors', function (Blueprint $table) {
             $table->ulid('id')->primary();
             $table->string('name'); 
+            $table->enum('type', ['sponsorship', 'media_partner'])->default('sponsorship');
             $table->text('description')->nullable();
             $table->timestamps();
         });
