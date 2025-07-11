@@ -24,6 +24,13 @@ class RegistrationController extends Controller
             ->where('competition_id', $competition_id)
             ->where('status', 'like', 'draft_%')
             ->first();
+
+          if (!$draft) {
+            return response()->json([
+                'message' => 'Draft tidak ditemukan',
+                'data' => null
+            ]);
+        }
             
         return response()->json($draft);
     }
@@ -35,7 +42,7 @@ class RegistrationController extends Controller
             'name'           => 'required|string|max:255',
             'school_name'    => 'required|string',
             'school_email'   => 'required|email',
-            'npsn'           => 'required|string',
+            'npsn'           => 'required|numeric|digits:8',
         ]);
 
         $user = $request->user();
@@ -69,25 +76,26 @@ class RegistrationController extends Controller
     
             'leader' => 'required|array',
             'leader.full_name' => 'required|string|max:255',
+            'leader.email' => 'required|email',
             'leader.place_of_birth' => 'required|string|max:255',
             'leader.date_of_birth' => 'required|date',
             'leader.address' => 'required|string',
             'leader.nisn' => 'required|string',
             'leader.phone_number' => 'required|string',
+            'leader.student_proof' => 'sometimes|required|file|image|max:2048', 
             'leader.twibbon_proof' => 'sometimes|required|file|image|max:2048',
-            'leader.passport_photo' => 'sometimes|required|file|image|max:2048',
-            'leader.identity_card' => 'sometimes|file|image|max:2048',
+           
 
             'members' => 'nullable|array',
             'members.*.full_name' => 'sometimes|required|string',
+            'members.*.email' => 'sometimes|required|email|different:leader.email',
             'members.*.nisn' => 'sometimes|required|string|different:leader.nisn',
             'members.*.phone_number' => 'sometimes|required|string|different:leader.phone_number',
             'members.*.place_of_birth' => 'sometimes|required|string',
             'members.*.date_of_birth' => 'sometimes|required|date',
             'members.*.address' => 'sometimes|required|string',
+            'members.*.student_proof' => 'sometimes|required|file|image|max:2048',
             'members.*.twibbon_proof' => 'sometimes|required|file|image|max:2048',
-            'members.*.passport_photo' => 'sometimes|required|file|image|max:2048',
-            'members.*.identity_card' => 'sometimes|file|image|max:2048',
         ]);
         
         $allNisns = collect([$request->input('leader.nisn')])->merge($request->input('members.*.nisn'));
@@ -97,6 +105,10 @@ class RegistrationController extends Controller
         $allPhones = collect([$request->input('leader.phone_number')])->merge($request->input('members.*.phone_number'));
         if ($allPhones->duplicates()->isNotEmpty()) {
             throw ValidationException::withMessages(['phone_number' => 'Nomor telepon tidak boleh sama antar peserta dalam satu tim.']);
+        }
+        $allEmails = collect([$request->input('leader.email')])->merge($request->input('members.*.email'));
+        if ($allEmails->duplicates()->isNotEmpty()) {
+            throw ValidationException::withMessages(['email' => 'Alamat email tidak boleh sama antar peserta dalam satu tim.']);
         }
 
         $registration = Registration::find($validated['registration_id']);
@@ -109,14 +121,11 @@ class RegistrationController extends Controller
             });
             $leader = Participant::create($request->input('leader'));
 
+            if ($request->hasFile('leader.student_proof')) {
+                $leader->addMedia($request->file('leader.student_proof'))->toMediaCollection('student-proofs');
+            }
             if ($request->hasFile('leader.twibbon_proof')) {
                 $leader->addMedia($request->file('leader.twibbon_proof'))->toMediaCollection('twibbon-proofs');
-            }
-            if ($request->hasFile('leader.passport_photo')) {
-                $leader->addMedia($request->file('leader.passport_photo'))->toMediaCollection('passport-photos');
-            }
-            if ($request->hasFile('leader.identity_card')) {
-                $leader->addMedia($request->file('leader.identity_card'))->toMediaCollection('identity-cards');
             }
             
             TeamMember::create(['team_id' => $registration->team_id, 'participant_id' => $leader->id, 'role' => 'leader']);
@@ -124,14 +133,11 @@ class RegistrationController extends Controller
             if ($request->has('members')) {
                 foreach ($request->input('members') as $index => $memberData) {
                     $member = Participant::create($memberData);
+                    if ($request->hasFile("members.{$index}.student_proof")) {
+                        $member->addMedia($request->file("members.{$index}.student_proof"))->toMediaCollection('student-proofs');
+                    }
                     if ($request->hasFile("members.{$index}.twibbon_proof")) {
                         $member->addMedia($request->file("members.{$index}.twibbon_proof"))->toMediaCollection('twibbon-proofs');
-                    }
-                    if ($request->hasFile("members.{$index}.passport_photo")) {
-                        $member->addMedia($request->file("members.{$index}.passport_photo"))->toMediaCollection('passport-photos');
-                    }
-                    if ($request->hasFile("members.{$index}.identity_card")) {
-                        $member->addMedia($request->file("members.{$index}.identity_card"))->toMediaCollection('identity-cards');
                     }
                    
                     TeamMember::create(['team_id' => $registration->team_id, 'participant_id' => $member->id, 'role' => 'member']);
@@ -157,6 +163,7 @@ class RegistrationController extends Controller
             ],
             'companion_teacher_name' => 'required|string',
             'companion_teacher_contact' => 'required|string',
+            'companion_teacher_email' => 'required|email',
             'companion_teacher_nip' => 'required|string',
         ]);
         

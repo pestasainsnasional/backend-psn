@@ -15,7 +15,6 @@ class Participant extends Model implements HasMedia
 {
     use HasFactory, HasUlids, InteractsWithMedia;
 
-   
     public $incrementing = false;
     protected $keyType = 'string';
 
@@ -27,12 +26,23 @@ class Participant extends Model implements HasMedia
         'address',
         'nisn',
         'phone_number',
+        'email',
     ];
 
- 
     protected function casts(): array
     {
         return ['date_of_birth' => 'date',  ];
+    }
+
+    public function registerMediaCollections(): void
+    {
+        $this
+            ->addMediaCollection('student-proofs')
+            ->singleFile(); 
+
+        $this
+            ->addMediaCollection('twibbon-proofs')
+            ->singleFile(); 
     }
 
     public function user(): BelongsTo

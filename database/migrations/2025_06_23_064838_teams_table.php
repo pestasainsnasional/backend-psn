@@ -13,9 +13,10 @@ return new class extends Migration
             $table->string('name');
             $table->string('school_name');
             $table->string('school_email');
-            $table->string('npsn');
+            $table->bigInteger('npsn')->unsigned();
             $table->string('companion_teacher_name')->nullable();
             $table->string('companion_teacher_contact')-> nullable();
+            $table->string('companion_teacher_email')->nullable();
             $table->string('companion_teacher_nip')->nullable();
             $table->timestamps();
         });

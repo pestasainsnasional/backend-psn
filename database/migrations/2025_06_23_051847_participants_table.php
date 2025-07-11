@@ -17,6 +17,7 @@ return new class extends Migration
             $table->text('address');
             $table->string('nisn')->unique(); 
             $table->string('phone_number')->unique();
+            $table->string('email')->unique();
             $table->timestamps();
         });
     }

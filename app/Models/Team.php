@@ -24,6 +24,7 @@ class Team extends Model implements HasMedia
         'npsn',
         'companion_teacher_name',
         'companion_teacher_contact',
+        'companion_teacher_email',
         'companion_teacher_nip',
     ];
 
