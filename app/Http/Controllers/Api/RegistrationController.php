@@ -199,7 +199,7 @@ class RegistrationController extends Controller
         $sanitizedSchoolName = strtoupper(preg_replace('/[^a-zA-Z0-9]/', '', $schoolName));
         $newCode = 'PSN' . $randomNumbers . '_' . $sanitizedSchoolName;
 
-        $expiresAt = now()->addMinutes(1); 
+        $expiresAt = now()->addMinutes(30); 
 
         $registration->update([
             'payment_unique_code' => $newCode,

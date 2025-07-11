@@ -27,13 +27,10 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail, Has
     ];
 
     protected $with = ['roles'];
-    protected $appends =['avatar_url'];
-
-
     public $incrementing = false;
     protected $keyType = 'string';
-
     protected $hidden = ['password','remember_token',];
+    protected $appends =['avatar_url'];
 
 
     protected function casts(): array
@@ -59,20 +56,17 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail, Has
     public function getAvatarUrlAttribute()
     {
         if ($this->hasMedia('avatars')){
-            return $this->getFirstMediaUrl('avatars');
+        return $this->getFirstMediaUrl('avatars');
         }
-        
-        return 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&background=random';
 
+        return asset('images/default-profile-avatar.png');
     }
-
 
     public function createdCompetitionTypes(): HasMany
     {
         return $this->hasMany(CompetitionType::class, 'created_by');  
     }
-
-      public function registrations(): HasMany
+    public function registrations(): HasMany
     {
         return $this->hasMany(Registration::class);
     }

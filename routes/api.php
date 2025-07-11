@@ -30,7 +30,6 @@ Route::prefix('histories')->group(function() {
     Route::get('/season/{year}', [HistoryController::class, 'spesificSeason']);
 });
 
-
 Route::get('/auth/google/redirect', [SocialLoginController::class, 'redirectToGoogle']);
 Route::get('/auth/google/callback', [SocialLoginController::class, 'handleGoogleCallback']);
 
@@ -43,7 +42,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('profile')->group(function() {
         Route::post('/avatar', [ProfileController::class, 'updateAvatar']);
+        Route::get('/registrations', [ProfileController::class, 'myRegistrations']);
     });
+
+    Route::get('/registrations/{registration}', [ProfileController::class, 'showRegistrationDetail']);
 
     Route::prefix('step-registration')->group(function () {
         Route::get('/draf/{competition_id}', [RegistrationController::class, 'getDraft']);
