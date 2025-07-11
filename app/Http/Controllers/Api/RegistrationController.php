@@ -152,7 +152,7 @@ class RegistrationController extends Controller
                 'required',
                 Rule::exists('registrations', 'id')->where(function ($query) use ($request) {
                     return $query->where('user_id', $request->user()->id)
-                                 ->where('status', ['draft_step_2', 'draft_step_3', 'draft_step_4']); 
+                                 ->whereIn('status', ['draft_step_2', 'draft_step_3', 'draft_step_4']); 
                 }),
             ],
             'companion_teacher_name' => 'required|string',
@@ -161,25 +161,32 @@ class RegistrationController extends Controller
         ]);
         
         $registration = Registration::with('competition.competitionType')->find($validated['registration_id']);
-        $competitionType = $registration->competition->competitionType;
 
-        if($competitionType->current_batch !== 'regular' && $registration->status !== 'draft_step_4') {
-              if ($competitionType->slot_remaining <= 0) {
-                throw ValidationException::withMessages([
-                    'kuota' => 'Mohon maaf, kuota untuk kompetisi ini telah habis. Anda tidak dapat melanjutkan ke tahap pembayaran.',
-                ]);
-            }
+        try {
+            DB::transaction(function () use ($request, $registration) {
+                
+                if ($registration->status === 'draft_step_2') {
+                    $competitionType = CompetitionType::where('id', $registration->competition->competition_type_id)
+                                            ->lockForUpdate() 
+                                            ->first();
+
+                    if ($competitionType->current_batch !== 'regular') {
+                        if ($competitionType->slot_remaining <= 0) {
+                            throw ValidationException::withMessages(['kuota' => 'Mohon maaf, kuota untuk sesi ini telah habis.']);
+                        }
+                        $competitionType->decrement('slot_remaining');
+                    }
+                    $registration->update(['status' => 'draft_step_3']);
+                }
+                $registration->team()->update($request->except('registration_id'));
+            });
+        } catch (ValidationException $e) {
+            return response()->json(['message' => $e->getMessage(), 'errors' => $e->errors()], 422);
         }
-        $registration->team()->update($request->except('registration_id'));
-
-        if ($registration->status === 'draft_step_2') {
-            $registration->update(['status' => 'draft_step_3']);
-        }
-        return response()->json(['message' => 'Langkah 3 berhasil disimpan.', 'registration_id' => $registration->id]);
-
+        return response()->json(['message' => 'Langkah 3 berhasil disimpan dan slot Anda telah diamankan sementara.', 'registration_id' => $registration->id]);
     }
 
-        public function getPaymentCode(Request $request, string $registration_id)
+    public function getPaymentCode(Request $request, string $registration_id)
     {
         $registration = $request->user()->registrations()
                                 ->with('team') 
@@ -212,12 +219,17 @@ class RegistrationController extends Controller
         ]);
     }
 
+
     public function storeStep4(Request $request)
     {
-        $registration = Registration::with('team', 'competition.competitionType')->find($request->input('registration_id'));
+        $registration = Registration::with('team')->find($request->input('registration_id'));
         if (!$registration || $registration->user_id !== $request->user()->id) {
             return response()->json(['message' => 'Pendaftaran tidak ditemukan.'], 404);
         }
+        if (!in_array($registration->status, ['draft_step_3', 'draft_step_4'])) {
+            return response()->json(['message' => 'Aksi tidak diizinkan untuk status pendaftaran saat ini.'], 403);
+        }
+
         $team = $registration->team;
         $validated = $request->validate([
             'registration_id' => 'required',
@@ -230,30 +242,12 @@ class RegistrationController extends Controller
             ]);
         }
 
-        try {
-            DB::transaction(function () use ($request, $registration, $team) {
-                if ($registration->status === 'draft_step_3') {
-                    $competitionType = CompetitionType::where('id', $registration->competition->competition_type_id)
-                                            ->lockForUpdate() 
-                                            ->first();
-
-                    if ($competitionType->current_batch !== 'regular') {
-                        if ($competitionType->slot_remaining <= 0) {
-                            throw ValidationException::withMessages(['kuota' => 'Mohon maaf, kuota baru saja habis saat Anda akan membayar.']);
-                        }
-                        $competitionType->decrement('slot_remaining');
-                    }
-                }
-                if ($request->hasFile('bukti_pembayaran')) {
-                    $team->clearMediaCollection('payment-proofs');
-                    $team->addMediaFromRequest('bukti_pembayaran')->toMediaCollection('payment-proofs');
-                }
-
-                $registration->update(['status' => 'draft_step_4']);
-            });
-        } catch (ValidationException $e) {
-            return response()->json(['message' => $e->getMessage(), 'errors' => $e->errors()], 422);
+        if ($request->hasFile('bukti_pembayaran')) {
+            $team->clearMediaCollection('payment-proofs');
+            $team->addMediaFromRequest('bukti_pembayaran')->toMediaCollection('payment-proofs');
         }
+        
+        $registration->update(['status' => 'draft_step_4']);
         return response()->json(['message' => 'Langkah 4 berhasil disimpan.', 'registration_id' => $registration->id]);
     }
 
