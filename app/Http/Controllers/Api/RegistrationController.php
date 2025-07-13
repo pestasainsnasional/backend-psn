@@ -25,15 +25,16 @@ class RegistrationController extends Controller
             ->where('status', 'like', 'draft_%')
             ->first();
 
-          if (!$draft) {
+        if (!$draft) {
             return response()->json([
                 'message' => 'Draft tidak ditemukan',
                 'data' => null
             ]);
         }
-            
+
         return response()->json($draft);
     }
+
 
     public function storeStep1(Request $request)
     {
@@ -46,17 +47,26 @@ class RegistrationController extends Controller
         ]);
 
         $user = $request->user();
-        
+
         $registration = DB::transaction(function () use ($user, $validated) {
+
             $team = Team::updateOrCreate(
                 ['name' => $validated['name'], 'school_name' => $validated['school_name']],
                 $validated
             );
-            
-            $registration = Registration::updateOrCreate(
-                ['user_id' => $user->id, 'competition_id' => $validated['competition_id']],
-                ['team_id' => $team->id, 'status' => 'draft_step_1']
-            );
+
+            $registration = Registration::firstOrNew([
+                'user_id' => $user->id,
+                'competition_id' => $validated['competition_id']
+            ]);
+
+            $registration->team_id = $team->id;
+
+            if (!$registration->exists) {
+                $registration->status = 'draft_step_1';
+            }
+
+            $registration->save();
             return $registration;
         });
 
@@ -70,10 +80,10 @@ class RegistrationController extends Controller
                 'required',
                 Rule::exists('registrations', 'id')->where(function ($query) use ($request) {
                     return $query->where('user_id', $request->user()->id)
-                                 ->whereIn('status', ['draft_step_1', 'draft_step_2', 'draft_step_3', 'draft_step_4']);
+                        ->whereIn('status', ['draft_step_1', 'draft_step_2', 'draft_step_3', 'draft_step_4']);
                 }),
             ],
-    
+
             'leader' => 'required|array',
             'leader.full_name' => 'required|string|max:255',
             'leader.email' => 'required|email',
@@ -82,9 +92,9 @@ class RegistrationController extends Controller
             'leader.address' => 'required|string',
             'leader.nisn' => 'required|string',
             'leader.phone_number' => 'required|string',
-            'leader.student_proof' => 'sometimes|required|file|image|max:2048', 
+            'leader.student_proof' => 'sometimes|required|file|image|max:2048',
             'leader.twibbon_proof' => 'sometimes|required|file|image|max:2048',
-           
+
 
             'members' => 'nullable|array',
             'members.*.full_name' => 'sometimes|required|string',
@@ -97,7 +107,7 @@ class RegistrationController extends Controller
             'members.*.student_proof' => 'sometimes|required|file|image|max:2048',
             'members.*.twibbon_proof' => 'sometimes|required|file|image|max:2048',
         ]);
-        
+
         $allNisns = collect([$request->input('leader.nisn')])->merge($request->input('members.*.nisn'));
         if ($allNisns->duplicates()->isNotEmpty()) {
             throw ValidationException::withMessages(['nisn' => 'NISN tidak boleh sama antar peserta dalam satu tim.']);
@@ -111,46 +121,81 @@ class RegistrationController extends Controller
             throw ValidationException::withMessages(['email' => 'Alamat email tidak boleh sama antar peserta dalam satu tim.']);
         }
 
-        $registration = Registration::find($validated['registration_id']);
+        $registrationIdToIgnore = $validated['registration_id'];
+
+        foreach ($allNisns as $nisn) {
+            $isAlreadyRegistered = Participant::where('nisn', $nisn)
+                ->whereHas('teamMemberships.team.registration', function ($query) use ($registrationIdToIgnore) {
+                    $query->whereIn('status', ['draft_step_3', 'draft_step_4', 'pending', 'verified'])
+                        ->where('id', '!=', $registrationIdToIgnore);
+                })
+                ->exists();
+            if ($isAlreadyRegistered) {
+                throw ValidationException::withMessages([
+                    'nisn' => "Peserta dengan NISN '{$nisn}' sudah terdaftar di kompetisi lain dan telah mengamankan slot.",
+                ]);
+            }
+        }
+
+        $registration = Registration::with('team.teamMembers.participant')->find($validated['registration_id']);
 
         DB::transaction(function () use ($request, $registration) {
-            $registration->team->teamMembers()->each(function ($teamMember) {
-                if ($teamMember->participant) {
-                    $teamMember->participant->delete(); 
-                }
-            });
-            $leader = Participant::create($request->input('leader'));
 
+            $leaderData = $request->input('leader');
+            $leader = $registration->team->teamMembers()->where('role', 'leader')->first()?->participant;
+            if ($leader) {
+                $leader->update($leaderData);
+            } else {
+                $leader = Participant::create($leaderData);
+                TeamMember::create(['team_id' => $registration->team_id, 'participant_id' => $leader->id, 'role' => 'leader']);
+            }
             if ($request->hasFile('leader.student_proof')) {
                 $leader->addMedia($request->file('leader.student_proof'))->toMediaCollection('student-proofs');
             }
             if ($request->hasFile('leader.twibbon_proof')) {
                 $leader->addMedia($request->file('leader.twibbon_proof'))->toMediaCollection('twibbon-proofs');
             }
-            
-            TeamMember::create(['team_id' => $registration->team_id, 'participant_id' => $leader->id, 'role' => 'leader']);
-            
-            if ($request->has('members')) {
-                foreach ($request->input('members') as $index => $memberData) {
-                    $member = Participant::create($memberData);
-                    if ($request->hasFile("members.{$index}.student_proof")) {
-                        $member->addMedia($request->file("members.{$index}.student_proof"))->toMediaCollection('student-proofs');
-                    }
-                    if ($request->hasFile("members.{$index}.twibbon_proof")) {
-                        $member->addMedia($request->file("members.{$index}.twibbon_proof"))->toMediaCollection('twibbon-proofs');
-                    }
-                   
-                    TeamMember::create(['team_id' => $registration->team_id, 'participant_id' => $member->id, 'role' => 'member']);
+
+            $existingMembers = $registration->team->teamMembers()->where('role', 'member')->get();
+            $incomingMembersData = $request->input('members', []);
+            $existingMemberIds = $existingMembers->pluck('participant.id')->filter();
+
+            $updatedMemberIds = [];
+
+            foreach ($incomingMembersData as $index => $memberData) {
+                $participant = null;
+                if (isset($existingMembers[$index])) {
+                    $participant = $existingMembers[$index]->participant;
+                    $participant->update($memberData);
+                } else {
+                    $participant = Participant::create($memberData);
+                    TeamMember::create(['team_id' => $registration->team_id, 'participant_id' => $participant->id, 'role' => 'member']);
                 }
+
+                if ($request->hasFile("members.{$index}.student_proof")) {
+                    $participant->addMedia($request->file("members.{$index}.student_proof"))->toMediaCollection('student-proofs');
+                }
+                if ($request->hasFile("members.{$index}.twibbon_proof")) {
+                    $participant->addMedia($request->file("members.{$index}.twibbon_proof"))->toMediaCollection('twibbon-proofs');
+                }
+                $updatedMemberIds[] = $participant->id;
             }
-            $registration->update([
-                'participant_id' => $leader->id,
-                'status' => 'draft_step_2'
-            ]);
+
+            $membersToDelete = $existingMemberIds->diff($updatedMemberIds);
+            if ($membersToDelete->isNotEmpty()) {
+                Participant::whereIn('id', $membersToDelete)->delete();
+            }
+
+            $updateData = ['participant_id' => $leader->id];
+
+            if ($registration->status === 'draft_step_1') {
+                $updateData['status'] = 'draft_step_2';
+            }
+            $registration->update($updateData);
         });
         return response()->json(['message' => 'Langkah 2 berhasil disimpan.', 'registration_id' => $registration->id]);
     }
-    
+
     public function storeStep3(Request $request)
     {
         $validated = $request->validate([
@@ -158,7 +203,7 @@ class RegistrationController extends Controller
                 'required',
                 Rule::exists('registrations', 'id')->where(function ($query) use ($request) {
                     return $query->where('user_id', $request->user()->id)
-                                 ->whereIn('status', ['draft_step_2', 'draft_step_3', 'draft_step_4']); 
+                        ->whereIn('status', ['draft_step_2', 'draft_step_3', 'draft_step_4']);
                 }),
             ],
             'companion_teacher_name' => 'required|string',
@@ -166,16 +211,16 @@ class RegistrationController extends Controller
             'companion_teacher_email' => 'required|email',
             'companion_teacher_nip' => 'required|string',
         ]);
-        
+
         $registration = Registration::with('competition.competitionType')->find($validated['registration_id']);
 
         try {
             DB::transaction(function () use ($request, $registration) {
-                
+
                 if ($registration->status === 'draft_step_2') {
                     $competitionType = CompetitionType::where('id', $registration->competition->competition_type_id)
-                                            ->lockForUpdate() 
-                                            ->first();
+                        ->lockForUpdate()
+                        ->first();
 
                     if ($competitionType->current_batch !== 'regular') {
                         if ($competitionType->slot_remaining <= 0) {
@@ -196,10 +241,10 @@ class RegistrationController extends Controller
     public function getPaymentCode(Request $request, string $registration_id)
     {
         $registration = $request->user()->registrations()
-                                ->with('team') 
-                                ->where('id', $registration_id)
-                                ->whereIn('status', ['draft_step_3', 'draft_step_4'])  
-                                ->firstOrFail();
+            ->with('team')
+            ->where('id', $registration_id)
+            ->whereIn('status', ['draft_step_3', 'draft_step_4'])
+            ->firstOrFail();
 
         if ($registration->payment_unique_code && $registration->payment_code_expires_at > now()) {
             return response()->json([
@@ -213,7 +258,7 @@ class RegistrationController extends Controller
         $sanitizedSchoolName = strtoupper(preg_replace('/[^a-zA-Z0-9]/', '', $schoolName));
         $newCode = 'PSN' . $randomNumbers . '_' . $sanitizedSchoolName;
 
-        $expiresAt = now()->addMinutes(30); 
+        $expiresAt = now()->addMinutes(30);
 
         $registration->update([
             'payment_unique_code' => $newCode,
@@ -240,9 +285,9 @@ class RegistrationController extends Controller
         $team = $registration->team;
         $validated = $request->validate([
             'registration_id' => 'required',
-            'bukti_pembayaran' => [Rule::requiredIf(!$team->hasMedia('payment-proofs')),'file', 'image','max:2048' ],
+            'bukti_pembayaran' => [Rule::requiredIf(!$team->hasMedia('payment-proofs')), 'file', 'image', 'max:2048'],
         ]);
-        
+
         if ($registration->payment_code_expires_at < now()) {
             throw ValidationException::withMessages([
                 'payment_code' => 'Kode pembayaran Anda telah kedaluwarsa. Silakan muat ulang halaman untuk mendapatkan kode baru.',
@@ -253,12 +298,12 @@ class RegistrationController extends Controller
             $team->clearMediaCollection('payment-proofs');
             $team->addMediaFromRequest('bukti_pembayaran')->toMediaCollection('payment-proofs');
         }
-        
+
         $registration->update(['status' => 'draft_step_4']);
         return response()->json(['message' => 'Langkah 4 berhasil disimpan.', 'registration_id' => $registration->id]);
     }
 
-    
+
     public function finalize(Request $request)
     {
         $validated = $request->validate([
@@ -269,7 +314,7 @@ class RegistrationController extends Controller
                 }),
             ],
         ]);
-        
+
         DB::transaction(function () use ($validated) {
             $registration = Registration::with(['user', 'team'])->find($validated['registration_id']);
             if (!$registration) {
@@ -279,7 +324,7 @@ class RegistrationController extends Controller
             $registration->update(['status' => 'pending']);
             $registration->user->notify(new RegistrationSubmitted($registration));
         });
-        
+
         return response()->json(['message' => 'Pendaftaran Anda berhasil dikirim dan akan segera diverifikasi!']);
     }
 }
