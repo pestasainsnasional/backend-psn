@@ -92,7 +92,7 @@ class RegistrationController extends Controller
             'leader.address' => 'required|string',
             'leader.nisn' => 'required|string',
             'leader.phone_number' => 'required|string',
-            'leader.student_proof' => 'sometimes|required|file|image|max:2048',
+            'leader.student_proof' => 'sometimes|required|file|mimes:jpg,jpeg,png,pdf|max:2048',
             'leader.twibbon_proof' => 'sometimes|required|file|image|max:2048',
 
 
@@ -104,7 +104,7 @@ class RegistrationController extends Controller
             'members.*.place_of_birth' => 'sometimes|required|string',
             'members.*.date_of_birth' => 'sometimes|required|date',
             'members.*.address' => 'sometimes|required|string',
-            'members.*.student_proof' => 'sometimes|required|file|image|max:2048',
+            'members.*.student_proof' => 'sometimes|required|file|mimes:jpg,jpeg,png,pdf|max:2048',
             'members.*.twibbon_proof' => 'sometimes|required|file|image|max:2048',
         ]);
 
@@ -139,16 +139,21 @@ class RegistrationController extends Controller
 
         $registration = Registration::with('team.teamMembers.participant')->find($validated['registration_id']);
 
+
+
+
         DB::transaction(function () use ($request, $registration) {
 
             $leaderData = $request->input('leader');
             $leader = $registration->team->teamMembers()->where('role', 'leader')->first()?->participant;
+
             if ($leader) {
                 $leader->update($leaderData);
             } else {
                 $leader = Participant::create($leaderData);
                 TeamMember::create(['team_id' => $registration->team_id, 'participant_id' => $leader->id, 'role' => 'leader']);
             }
+
             if ($request->hasFile('leader.student_proof')) {
                 $leader->addMedia($request->file('leader.student_proof'))->toMediaCollection('student-proofs');
             }
@@ -158,13 +163,14 @@ class RegistrationController extends Controller
 
             $existingMembers = $registration->team->teamMembers()->where('role', 'member')->get();
             $incomingMembersData = $request->input('members', []);
-            $existingMemberIds = $existingMembers->pluck('participant.id')->filter();
 
-            $updatedMemberIds = [];
+            $existingParticipantIds = $existingMembers->pluck('participant.id')->filter();
+            $processedParticipantIds = [];
 
             foreach ($incomingMembersData as $index => $memberData) {
                 $participant = null;
-                if (isset($existingMembers[$index])) {
+
+                if (isset($existingMembers[$index]) && $existingMembers[$index]->participant) {
                     $participant = $existingMembers[$index]->participant;
                     $participant->update($memberData);
                 } else {
@@ -178,21 +184,23 @@ class RegistrationController extends Controller
                 if ($request->hasFile("members.{$index}.twibbon_proof")) {
                     $participant->addMedia($request->file("members.{$index}.twibbon_proof"))->toMediaCollection('twibbon-proofs');
                 }
-                $updatedMemberIds[] = $participant->id;
+                $processedParticipantIds[] = $participant->id;
             }
+            $participantIdsToDelete = $existingParticipantIds->diff($processedParticipantIds);
 
-            $membersToDelete = $existingMemberIds->diff($updatedMemberIds);
-            if ($membersToDelete->isNotEmpty()) {
-                Participant::whereIn('id', $membersToDelete)->delete();
+            if ($participantIdsToDelete->isNotEmpty()) {
+                TeamMember::whereIn('participant_id', $participantIdsToDelete)->delete();
+                Participant::whereIn('id', $participantIdsToDelete)->delete();
             }
 
             $updateData = ['participant_id' => $leader->id];
-
             if ($registration->status === 'draft_step_1') {
                 $updateData['status'] = 'draft_step_2';
             }
+
             $registration->update($updateData);
         });
+
         return response()->json(['message' => 'Langkah 2 berhasil disimpan.', 'registration_id' => $registration->id]);
     }
 
