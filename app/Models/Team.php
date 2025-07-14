@@ -28,6 +28,13 @@ class Team extends Model implements HasMedia
         'companion_teacher_nip',
     ];
 
+       public function registerMediaCollections(): void
+    {
+        $this
+            ->addMediaCollection('payment-proofs') 
+            ->singleFile(); 
+    }
+
   
     public function teamMembers(): HasMany
     {
