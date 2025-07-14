@@ -140,8 +140,6 @@ class RegistrationController extends Controller
         $registration = Registration::with('team.teamMembers.participant')->find($validated['registration_id']);
 
 
-
-
         DB::transaction(function () use ($request, $registration) {
 
             $leaderData = $request->input('leader');

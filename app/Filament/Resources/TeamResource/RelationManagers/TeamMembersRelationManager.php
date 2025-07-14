@@ -74,9 +74,7 @@ class TeamMembersRelationManager extends RelationManager
                     ->modalCancelActionLabel('Tutup'),
             ])
             ->bulkActions([
-                // Tables\Actions\BulkActionGroup::make([
-                //     Tables\Actions\DeleteBulkAction::make(),
-                // ]),
+                
             ]);
     }
 }

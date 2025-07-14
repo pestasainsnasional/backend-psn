@@ -1,5 +1,6 @@
 <?php
 
+
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\ParticipantResource\Pages;
@@ -15,9 +16,9 @@ use Filament\Tables\Columns\SpatieMediaLibraryImageColumn;
 class ParticipantResource extends Resource
 {
     protected static ?string $model = Participant::class;
-    protected static ?string $navigationIcon = 'heroicon-o-user-circle';
+    protected static ?string $navigationIcon = 'heroicon-o-user';
     protected static ?string $navigationGroup = 'Manajemen Pendaftaran';
-    protected static ?string $navigationLabel = 'Partisipan';
+    protected static ?string $navigationLabel = 'Peserta';
 
     public static function form(Form $form): Form
     {
@@ -25,37 +26,22 @@ class ParticipantResource extends Resource
             ->schema([
                 Forms\Components\Section::make('Data Diri Peserta')
                     ->schema([
-                        // Field-field dari model Participant Anda
-                        Forms\Components\TextInput::make('full_name')
-                            ->required()->label('Nama Lengkap'),
-                        
-                        Forms\Components\TextInput::make('nisn')
-                            ->required()
-                            ->numeric()
-                            ->unique(ignoreRecord: true) 
-                            ->label('NISN'),
-                        
-                        Forms\Components\TextInput::make('place_of_birth')
-                            ->required()->label('Tempat Lahir'),
-                        
-                        Forms\Components\DatePicker::make('date_of_birth')
-                            ->native(false) 
-                            ->required()->label('Tanggal Lahir'),
-                        
-                        Forms\Components\TextInput::make('phone_number')
-                            ->tel()
-                            ->unique(ignoreRecord: true)
-                            ->required()->label('Nomor Telepon'),
-                        
-                        Forms\Components\Textarea::make('address')
-                            ->required()->label('Alamat')->columnSpanFull(),
-
-                        SpatieMediaLibraryFileUpload::make('identity_card')
-                            ->label('Kartu Identitas (Kartu Pelajar / KTP)')
-                            ->collection('identity-cards') 
-                            ->image() 
-                            ->imageEditor() 
-                            ->required(),
+                        Forms\Components\TextInput::make('full_name')->required()->label('Nama Lengkap'),
+                        Forms\Components\TextInput::make('email')->email()->required()->label('Email'),
+                        Forms\Components\TextInput::make('nisn')->numeric()->required()->label('NISN'),
+                        Forms\Components\TextInput::make('phone_number')->tel()->required()->label('No. Telepon'),
+                        Forms\Components\TextInput::make('place_of_birth')->required()->label('Tempat Lahir'),
+                        Forms\Components\DatePicker::make('date_of_birth')->native(false)->required()->label('Tanggal Lahir'),
+                        Forms\Components\Textarea::make('address')->required()->label('Alamat')->columnSpanFull(),
+                    ])->columns(2),
+                Forms\Components\Section::make('Dokumen Peserta')
+                    ->schema([
+                        SpatieMediaLibraryFileUpload::make('studentproof')
+                            ->collection('student-proofs')
+                            ->label('Kartu Pelajar/Mahasiswa'),
+                        SpatieMediaLibraryFileUpload::make('twibbon_proof')
+                            ->collection('twibbon-proofs')
+                            ->label('Bukti Twibbon'),
                     ])->columns(2),
             ]);
     }
@@ -64,39 +50,14 @@ class ParticipantResource extends Resource
     {
         return $table
             ->columns([
-                SpatieMediaLibraryImageColumn::make('identity_card')
-                    ->label('Kartu Identitas')
-                    ->collection('identity-cards'),
-                    
-                Tables\Columns\TextColumn::make('full_name')
-                    ->label('Nama Lengkap')
-                    ->searchable()
-                    ->sortable(),
-                
-                Tables\Columns\TextColumn::make('nisn')
-                    ->label('NISN')
-                    ->searchable(),
-                
-                Tables\Columns\TextColumn::make('phone_number')
-                    ->label('No. Telepon'),
-            ])
-            ->filters([
-         
+                Tables\Columns\TextColumn::make('full_name')->label('Nama Lengkap')->searchable()->sortable(),
+                Tables\Columns\TextColumn::make('email')->label('Email')->searchable(),
+                Tables\Columns\TextColumn::make('nisn')->label('NISN'),
+                SpatieMediaLibraryImageColumn::make('student_proofs')->collection('student-proofs')->label('Dokumen Bukti Siswa'),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
             ]);
-    }
-    
-    public static function getRelations(): array
-    {
-        return [];
     }
     
     public static function getPages(): array
