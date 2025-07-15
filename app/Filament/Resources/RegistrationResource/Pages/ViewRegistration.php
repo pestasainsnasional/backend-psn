@@ -28,8 +28,6 @@ class ViewRegistration extends ViewRecord
     {
         return $infolist
             ->schema([
-                // Kita tidak lagi menggunakan Grid dan Group untuk layout utama.
-                // Semua seksi akan ditampilkan secara berurutan dari atas ke bawah.
 
                 Components\Section::make('Detail Pendaftaran')
                     ->schema([
@@ -46,7 +44,6 @@ class ViewRegistration extends ViewRecord
                         Components\TextEntry::make('team.name')->label('Nama Tim'),
                         Components\TextEntry::make('team.school_name')->label('Nama Sekolah'),
                         Components\TextEntry::make('payment_unique_code')->label('Kode Pembayaran')->copyable(),
-                        // Media untuk bukti pembayaran dihapus sementara
                     ])
                     ->columns(2)
                     ->collapsible() 

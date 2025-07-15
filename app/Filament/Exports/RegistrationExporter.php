@@ -14,70 +14,80 @@ class RegistrationExporter extends Exporter
     public static function getColumns(): array
     {
         return [
-            // Kolom dari relasi langsung
+        
             ExportColumn::make('id')->label('ID Pendaftaran'),
+            ExportColumn::make('status'),
             ExportColumn::make('competition.name')->label('Kompetisi'),
+            ExportColumn::make('user.name')->label('Didaftarkan Oleh'),
+            ExportColumn::make('created_at')->label('Tanggal Daftar'),
+            
             ExportColumn::make('team.name')->label('Nama Tim'),
             ExportColumn::make('team.school_name')->label('Asal Sekolah'),
-            ExportColumn::make('status'),
-            ExportColumn::make('team.companion_teacher_name')->label('Nama Guru Pendamping'),
+            ExportColumn::make('payment_unique_code')->label('Kode Pembayaran'),
+
+            ExportColumn::make('team.companion_teacher_name')->label('Nama Guru'),
             ExportColumn::make('team.companion_teacher_contact')->label('Kontak Guru'),
+            ExportColumn::make('team.companion_teacher_email')->label('Email Guru'),
 
-            // --- Kolom Kustom untuk Peserta (menggunakan state()) ---
-
-            // Kolom untuk Leader
+ 
             ExportColumn::make('leader_name')
                 ->label('Nama Leader')
-                ->state(function (Registration $record) {
-                    // Cari anggota dengan peran 'leader' dan ambil nama participant-nya
-                    return $record->team?->teamMembers->firstWhere('role', 'leader')?->participant?->full_name ?? 'N/A';
-                }),
-            ExportColumn::make('leader_nisn')
-                ->label('NISN Leader')
-                ->state(function (Registration $record) {
-                    return $record->team?->teamMembers->firstWhere('role', 'leader')?->participant?->nisn ?? 'N/A';
-                }),
+                ->state(fn (Registration $record) => $record->team?->teamMembers->firstWhere('role', 'leader')?->participant?->full_name ?? 'N/A'),
             ExportColumn::make('leader_email')
                 ->label('Email Leader')
-                ->state(function (Registration $record) {
-                    return $record->team?->teamMembers->firstWhere('role', 'leader')?->participant?->email ?? 'N/A';
-                }),
+                ->state(fn (Registration $record) => $record->team?->teamMembers->firstWhere('role', 'leader')?->participant?->email ?? 'N/A'),
+            ExportColumn::make('leader_nisn')
+                ->label('NISN Leader')
+                ->state(fn (Registration $record) => $record->team?->teamMembers->firstWhere('role', 'leader')?->participant?->nisn ?? 'N/A'),
+            ExportColumn::make('leader_phone')
+                ->label('No. Telepon Leader')
+                ->state(fn (Registration $record) => $record->team?->teamMembers->firstWhere('role', 'leader')?->participant?->phone_number ?? 'N/A'),
+            ExportColumn::make('leader_birth_info')
+                ->label('TTL Leader')
+                ->state(fn (Registration $record) => ($p = $record->team?->teamMembers->firstWhere('role', 'leader')?->participant) ? "{$p->place_of_birth}, {$p->date_of_birth}" : 'N/A'),
+            ExportColumn::make('leader_address')
+                ->label('Alamat Leader')
+                ->state(fn (Registration $record) => $record->team?->teamMembers->firstWhere('role', 'leader')?->participant?->address ?? 'N/A'),
 
-            // Kolom untuk Anggota 1
+
             ExportColumn::make('member1_name')
                 ->label('Nama Anggota 1')
-                ->state(function (Registration $record) {
-                    // Ambil semua anggota (bukan leader), lalu ambil yang pertama (index 0)
-                    return $record->team?->teamMembers->where('role', 'member')->values()->get(0)?->participant?->full_name ?? 'N/A';
-                }),
-            ExportColumn::make('member1_nisn')
-                ->label('NISN Anggota 1')
-                ->state(function (Registration $record) {
-                    return $record->team?->teamMembers->where('role', 'member')->values()->get(0)?->participant?->nisn ?? 'N/A';
-                }),
+                ->state(fn (Registration $record) => $record->team?->teamMembers->where('role', 'member')->values()->get(0)?->participant?->full_name ?? 'N/A'),
             ExportColumn::make('member1_email')
                 ->label('Email Anggota 1')
-                ->state(function (Registration $record) {
-                    return $record->team?->teamMembers->where('role', 'member')->values()->get(0)?->participant?->email ?? 'N/A';
-                }),
+                ->state(fn (Registration $record) => $record->team?->teamMembers->where('role', 'member')->values()->get(0)?->participant?->email ?? 'N/A'),
+            ExportColumn::make('member1_nisn')
+                ->label('NISN Anggota 1')
+                ->state(fn (Registration $record) => $record->team?->teamMembers->where('role', 'member')->values()->get(0)?->participant?->nisn ?? 'N/A'),
+            ExportColumn::make('member1_phone')
+                ->label('No. Telepon Anggota 1')
+                ->state(fn (Registration $record) => $record->team?->teamMembers->where('role', 'member')->values()->get(0)?->participant?->phone_number ?? 'N/A'),
+            ExportColumn::make('member1_birth_info')
+                ->label('TTL Anggota 1')
+                ->state(fn (Registration $record) => ($p = $record->team?->teamMembers->where('role', 'member')->values()->get(0)?->participant) ? "{$p->place_of_birth}, {$p->date_of_birth}" : 'N/A'),
+            ExportColumn::make('member1_address')
+                ->label('Alamat Anggota 1')
+                ->state(fn (Registration $record) => $record->team?->teamMembers->where('role', 'member')->values()->get(0)?->participant?->address ?? 'N/A'),
 
-            // Kolom untuk Anggota 2
+
             ExportColumn::make('member2_name')
                 ->label('Nama Anggota 2')
-                ->state(function (Registration $record) {
-                    // Ambil semua anggota, lalu ambil yang kedua (index 1)
-                    return $record->team?->teamMembers->where('role', 'member')->values()->get(1)?->participant?->full_name ?? 'N/A';
-                }),
+                ->state(fn (Registration $record) => $record->team?->teamMembers->where('role', 'member')->values()->get(1)?->participant?->full_name ?? 'N/A'),
+            ExportColumn::make('member2_email')
+                ->label('Email Anggota 2')
+                ->state(fn (Registration $record) => $record->team?->teamMembers->where('role', 'member')->values()->get(1)?->participant?->email ?? 'N/A'),
             ExportColumn::make('member2_nisn')
                 ->label('NISN Anggota 2')
-                ->state(function (Registration $record) {
-                    return $record->team?->teamMembers->where('role', 'member')->values()->get(1)?->participant?->nisn ?? 'N/A';
-                }),
-             ExportColumn::make('member2_email')
-                ->label('Email Anggota 2')
-                ->state(function (Registration $record) {
-                    return $record->team?->teamMembers->where('role', 'member')->values()->get(1)?->participant?->email ?? 'N/A';
-                }),
+                ->state(fn (Registration $record) => $record->team?->teamMembers->where('role', 'member')->values()->get(1)?->participant?->nisn ?? 'N/A'),
+            ExportColumn::make('member2_phone')
+                ->label('No. Telepon Anggota 2')
+                ->state(fn (Registration $record) => $record->team?->teamMembers->where('role', 'member')->values()->get(1)?->participant?->phone_number ?? 'N/A'),
+            ExportColumn::make('member2_birth_info')
+                ->label('TTL Anggota 2')
+                ->state(fn (Registration $record) => ($p = $record->team?->teamMembers->where('role', 'member')->values()->get(1)?->participant) ? "{$p->place_of_birth}, {$p->date_of_birth}" : 'N/A'),
+            ExportColumn::make('member2_address')
+                ->label('Alamat Anggota 2')
+                ->state(fn (Registration $record) => $record->team?->teamMembers->where('role', 'member')->values()->get(1)?->participant?->address ?? 'N/A'),
         ];
     }
 
@@ -91,7 +101,6 @@ class RegistrationExporter extends Exporter
 
         return $body;
     }
-
   
     public function getJobConnection(): ?string
     {
