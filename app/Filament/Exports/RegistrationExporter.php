@@ -24,7 +24,6 @@ class RegistrationExporter extends Exporter
                 ->label('Gelombang Pendaftaran')
                 ->state(function (Registration $record) {
                     $batch = $record->competition?->competitionType?->current_batch;
-                    // Mengubah nama teknis menjadi label yang mudah dibaca
                     if ($batch === 'presale_1') return 'Pre-sale 1';
                     if ($batch === 'presale_2') return 'Pre-sale 2';
                     if ($batch === 'regular') return 'Regular';

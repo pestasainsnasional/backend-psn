@@ -40,6 +40,23 @@ class Registration extends Model
             }
         
         });
+
+        static::deleting(function (Registration $registration) {
+            
+            $statusesThatTookSlot = ['draft_step_3', 'draft_step_4', 'pending', 'verified'];
+            if (in_array($registration->status, $statusesThatTookSlot)) {
+                $competitionType = $registration->competition?->competitionType;
+                if ($competitionType && $competitionType->current_batch !== 'regular') {
+                    $competitionType->increment('slot_remaining');
+                }
+            }
+            
+            if ($registration->team) {
+                $participantIds = $registration->team->teamMembers()->pluck('participant_id');
+                Participant::whereIn('id', $participantIds)->delete();
+                $registration->team->delete();
+            }
+        });
     }
     
     public function user(): BelongsTo
