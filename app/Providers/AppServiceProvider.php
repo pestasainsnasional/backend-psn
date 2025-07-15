@@ -5,6 +5,8 @@ namespace App\Providers;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Sanctum\Sanctum;
+use App\Models\Export; 
+use App\Models\Import;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -13,7 +15,17 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+      
+        $this->app->bind(
+            \Filament\Actions\Exports\Models\Export::class,
+            Export::class
+        );
+
+   
+        $this->app->bind(
+            \Filament\Actions\Imports\Models\Import::class,
+            Import::class
+        );
     }
 
     /**
@@ -27,4 +39,6 @@ class AppServiceProvider extends ServiceProvider
 
         Sanctum::usePersonalAccessTokenModel(\App\Models\Sanctum\PersonalAccessToken::class);
     }
+
+    
 }

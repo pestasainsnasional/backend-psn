@@ -5,11 +5,15 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\RegistrationResource\Pages;
 use App\Models\Registration;
+use App\Models\Competition;
+use App\Filament\Exports\RegistrationExporter; // <-- 1. TAMBAHKAN IMPORT INI
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Tables\Actions\ExportAction; 
+use Filament\Actions\Exports\Enums\ExportFormat;
 
 class RegistrationResource extends Resource
 {
@@ -20,7 +24,7 @@ class RegistrationResource extends Resource
 
     public static function form(Form $form): Form
     {
-        // Form ini digunakan saat mengedit, kita buat simpel saja
+        // Form Anda tidak perlu diubah
         return $form
             ->schema([
                 Forms\Components\Section::make('Status Pendaftaran')
@@ -43,61 +47,42 @@ class RegistrationResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            // === 3. TAMBAHKAN BLOK INI UNTUK TOMBOL EKSPOR ===
+            ->headerActions([
+                ExportAction::make()
+                    ->label('Export ke Excel')
+                    ->exporter(RegistrationExporter::class)
+                    ->fileName('Data Pendaftaran - ' . date('Y-m-d'))
+                     ->formats([ExportFormat::Xlsx,])
+
+            ])
+            // ===============================================
             ->columns([
-                Tables\Columns\TextColumn::make('team.name')
-                    ->label('Nama Tim')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('competition.name')
-                    ->label('Kompetisi')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('user.name')
-                    ->label('Didaftarkan Oleh')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('payment_unique_code')
-                    ->label('Kode Pembayaran')
-                    ->copyable(),
-                // === KOLOM STATUS DIPERBAIKI DI SINI ===
-                // Menggunakan BadgeColumn untuk menampilkan status dengan warna
+                Tables\Columns\TextColumn::make('team.name')->label('Nama Tim')->searchable(),
+                Tables\Columns\TextColumn::make('competition.name')->label('Kompetisi')->searchable(),
+                Tables\Columns\TextColumn::make('user.name')->label('Didaftarkan Oleh')->searchable(),
                 Tables\Columns\BadgeColumn::make('status')
                     ->formatStateUsing(fn (string $state): string => match ($state) {
-                        'draft_step_1' => 'Draf (Step 1)',
-                        'draft_step_2' => 'Draf (Step 2)',
-                        'draft_step_3' => 'Draf (Step 3)',
-                        'draft_step_4' => 'Menunggu Finalisasi',
-                        'pending' => 'Pending',
-                        'verified' => 'Terverifikasi',
-                        'rejected' => 'Ditolak',
+                        'draft_step_1' => 'Draf (Step 1)', 'draft_step_2' => 'Draf (Step 2)', 'draft_step_3' => 'Draf (Step 3)',
+                        'draft_step_4' => 'Menunggu Finalisasi', 'pending' => 'Pending', 'verified' => 'Terverifikasi', 'rejected' => 'Ditolak',
                         default => $state,
-                    })
-                    ->color(fn (string $state): string => match ($state) {
-                        'draft_step_1', 'draft_step_2', 'draft_step_3' => 'info',
-                        'draft_step_4' => 'primary',
-                        'pending' => 'warning',
-                        'verified' => 'success',
-                        'rejected' => 'danger',
-                        default => 'gray',
-                    })
-                    ->sortable(),
+                    })->color(fn (string $state): string => match ($state) {
+                        'draft_step_1', 'draft_step_2', 'draft_step_3' => 'info', 'draft_step_4' => 'primary', 'pending' => 'warning',
+                        'verified' => 'success', 'rejected' => 'danger', default => 'gray',
+                    })->sortable(),
             ])
             ->filters([
+                Tables\Filters\SelectFilter::make('competition_id')
+                    ->label('Kompetisi')
+                    ->options(Competition::all()->pluck('name', 'id')->toArray())
+                    ->searchable(),
                 Tables\Filters\SelectFilter::make('status')
-                    ->options([
-                        'pending' => 'Pending',
-                        'verified' => 'Verified',
-                        'rejected' => 'Rejected',
-                    ])
+                    ->options(['pending' => 'Pending', 'verified' => 'Verified', 'rejected' => 'Rejected',]),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
             ]);
-    }
-    
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
     }
     
     public static function getPages(): array
