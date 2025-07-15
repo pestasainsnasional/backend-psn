@@ -18,6 +18,19 @@ class RegistrationExporter extends Exporter
             ExportColumn::make('id')->label('ID Pendaftaran'),
             ExportColumn::make('status'),
             ExportColumn::make('competition.name')->label('Kompetisi'),
+
+            ExportColumn::make('competition.competitionType.name')->label('Jenis Kompetisi'),
+            ExportColumn::make('registration_batch')
+                ->label('Gelombang Pendaftaran')
+                ->state(function (Registration $record) {
+                    $batch = $record->competition?->competitionType?->current_batch;
+                    // Mengubah nama teknis menjadi label yang mudah dibaca
+                    if ($batch === 'presale_1') return 'Pre-sale 1';
+                    if ($batch === 'presale_2') return 'Pre-sale 2';
+                    if ($batch === 'regular') return 'Regular';
+                    return 'N/A';
+                }),
+
             ExportColumn::make('user.name')->label('Didaftarkan Oleh'),
             ExportColumn::make('created_at')->label('Tanggal Daftar'),
             
