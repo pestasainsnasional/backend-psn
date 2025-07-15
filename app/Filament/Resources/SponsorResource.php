@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\SponsorResource\Pages;
 use App\Models\Sponsor;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\TextInput;
@@ -34,7 +35,14 @@ class SponsorResource extends Resource
                     ->required(),
                 TextArea::make('description')
                     ->label('Deskripsi Brand')
-                    ->columnSpanFull(),
+                    ->columnSpanFull()
+                    ->required(),
+                Select::make('type')
+                    ->options([
+                        'sponsorship' => 'Sponsorship',
+                        'media_partner' => 'Media Partner'
+                    ])
+                    ->required(),
             ]);
     }
 
@@ -52,10 +60,18 @@ class SponsorResource extends Resource
                 TextColumn::make('description')
                     ->label('Deskripsi')
                     ->html(),
+                TextColumn::make('type')
+                    ->label('Tipe Sponsor')
+                    ->formatStateUsing(function ($state) {
+                        return match ($state) {
+                            'sponsorship' => 'Sponsorship',
+                            'media_partner' => 'Media Partner',
+                            default => ucfirst(str_replace('_', ' ', $state)),
+                        };
+                    }),
+
             ])
-            ->filters([
-                
-            ])
+            ->filters([])
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
@@ -66,7 +82,7 @@ class SponsorResource extends Resource
                 ]),
             ]);
     }
-    
+
     public static function getPages(): array
     {
         return [
@@ -74,5 +90,5 @@ class SponsorResource extends Resource
             'create' => Pages\CreateSponsor::route('/create'),
             'edit' => Pages\EditSponsor::route('/{record}/edit'),
         ];
-    }    
+    }
 }

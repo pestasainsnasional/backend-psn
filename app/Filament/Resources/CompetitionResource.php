@@ -28,15 +28,15 @@ class CompetitionResource extends Resource
                 Forms\Components\Card::make()
                     ->schema([
                         SpatieMediaLibraryFileUpload::make('competition_logo')
-                            ->collection('competition_logo') 
+                            ->collection('competition_logo')
                             ->label('Logo Kompetisi')
-                            ->image() 
-                            ->imageEditor() 
-                            ->responsiveImages() 
+                            ->image()
+                            ->imageEditor()
+                            ->responsiveImages()
                             ->columnSpanFull(),
 
                         Forms\Components\Select::make('competition_type_id')
-                            ->relationship('competitionType', 'type') 
+                            ->relationship('competitionType', 'type')
                             ->searchable()
                             ->preload()
                             ->required()
@@ -50,7 +50,9 @@ class CompetitionResource extends Resource
                         Forms\Components\TextInput::make('major')
                             ->maxLength(255)
                             ->label('Jurusan'),
-
+                        Forms\Components\TextInput::make('guidebook_link')
+                            ->maxLength(255)
+                            ->label('Link Guidebook'),
                         Forms\Components\Toggle::make('is_active')
                             ->required()
                             ->default(true)
@@ -64,7 +66,7 @@ class CompetitionResource extends Resource
                             ->label('Deskripsi')
                             ->columnSpanFull(),
                     ])
-                    ->columns(2), 
+                    ->columns(2),
             ]);
     }
 
@@ -75,7 +77,7 @@ class CompetitionResource extends Resource
                 SpatieMediaLibraryImageColumn::make('competition_logo')
                     ->collection('competition_logo')
                     ->label('Foto')
-                    ->circular(), 
+                    ->circular(),
 
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nama Kompetisi')
@@ -84,11 +86,15 @@ class CompetitionResource extends Resource
 
                 Tables\Columns\TextColumn::make('competitionType.type')
                     ->label('Tipe')
-                    ->badge() 
+                    ->badge()
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('major')
                     ->label('Jurusan')
+                    ->searchable(),
+
+                Tables\Columns\TextColumn::make('guidebook_link')
+                    ->label('Link Guidebook')
                     ->searchable(),
 
                 Tables\Columns\IconColumn::make('is_active')
@@ -98,7 +104,7 @@ class CompetitionResource extends Resource
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true), 
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('is_active')
@@ -128,9 +134,7 @@ class CompetitionResource extends Resource
 
     public static function getRelations(): array
     {
-        return [
-            
-        ];
+        return [];
     }
 
     public static function getPages(): array
