@@ -23,6 +23,7 @@ class Competition extends Model implements HasMedia
         'competition_type_id',
         'name',
         'description',
+        'guidebook_link',
         'rules',
         'major',
         'is_active',

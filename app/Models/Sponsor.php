@@ -16,6 +16,7 @@ class Sponsor extends Model implements HasMedia
         'name',
         'type',
         'description',
+        'type',
     ];
 
     public function registerMediaCollections(): void

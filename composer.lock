@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "3b503fa126bdb891483ea26c5dab9e52",
+    "content-hash": "38e534e9ff605062fbd40b2b5d087b31",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -1345,7 +1345,7 @@
         },
         {
             "name": "filament/spatie-laravel-media-library-plugin",
-            "version": "v3.3.28",
+            "version": "v3.3.30",
             "source": {
                 "type": "git",
                 "url": "https://github.com/filamentphp/spatie-laravel-media-library-plugin.git",

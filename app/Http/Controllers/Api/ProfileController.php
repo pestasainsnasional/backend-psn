@@ -30,12 +30,17 @@ class ProfileController extends Controller
         $user = $request->user();
 
         $registrations = $user->registrations()
-                              ->with(['competition', 'team'])
-                              ->latest()
-                              ->get();
+            ->with([
+                'competition.competitionType',
+                'team.media',
+                'team.teamMembers.participant.media'
+            ])
+            ->latest()
+            ->get();
 
         return response()->json($registrations);
     }
+
 
     public function showRegistrationDetail(Request $request, Registration $registration)
     {
@@ -43,8 +48,19 @@ class ProfileController extends Controller
             return response()->json(['message' => 'Data pendaftaran tidak ditemukan.'], 404);
         }
 
-        $registration->load(['competition', 'team.media', 'team.teamMembers.participant.media' ]);
+        $registration->load(['competition', 'team.media', 'team.teamMembers.participant.media']);
         return response()->json($registration);
     }
 
+    public function checkRegistrationStatus(Request $request)
+    {
+        $user = $request->user();
+        $isRegistered = Registration::where('user_id', $user->id)
+            ->whereIn('status', ['pending', 'verified'])
+            ->exists();
+
+        return response()->json([
+            'is_registered' => $isRegistered,
+        ]);
+    }
 }
