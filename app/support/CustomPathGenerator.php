@@ -45,6 +45,6 @@ class CustomPathGenerator implements PathGenerator
 
     public function getPathForResponsiveImages(Media $media): string
     {
-        return $this->getPath($media) . 'responsive-images/';
+        return $this->getPath($media) . 'responsive/';
     }
 }
