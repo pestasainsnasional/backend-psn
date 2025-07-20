@@ -9,6 +9,9 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Tables\Actions\ActionGroup;
+use Filament\Tables\Actions\Action;
+use Filament\Forms\Components\SpatieMediaLibraryFileUpload; 
 
 class TeamResource extends Resource
 {
@@ -35,6 +38,15 @@ class TeamResource extends Resource
                         Forms\Components\TextInput::make('companion_teacher_email')->email()->label('Email Guru'),
                         Forms\Components\TextInput::make('companion_teacher_nip')->label('NIP Guru'),
                     ])->columns(2),
+                
+                Forms\Components\Section::make('Dokumen Tim')
+                    ->schema([
+                        SpatieMediaLibraryFileUpload::make('payment_proofs') 
+                            ->label('Bukti Pembayaran')
+                            ->collection('payment-proofs')
+                            ->disabled() 
+                    ])
+                    ->visibleOn('edit'), 
             ]);
     }
 
@@ -44,10 +56,31 @@ class TeamResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('name')->label('Nama Tim')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('school_name')->label('Nama Sekolah')->searchable(),
+                Tables\Columns\TextColumn::make('npsn')->label('NPSN')->searchable(),
                 Tables\Columns\TextColumn::make('companion_teacher_name')->label('Guru Pendamping'),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                
+                ActionGroup::make([
+                    Action::make('viewPaymentProof')
+                        ->label('Lihat Bukti Pembayaran')
+                        ->icon('heroicon-o-eye')
+                        ->modalContent(fn (Team $record): \Illuminate\Contracts\View\View => 
+                            view('filament.modals.view-media', ['media' => $record->getFirstMedia('payment-proofs')]))
+                        ->modalSubmitAction(false)
+                        ->modalCancelActionLabel('Tutup')
+                        ->visible(fn (Team $record): bool => $record->hasMedia('payment-proofs')),
+
+                    Action::make('downloadPaymentProof')
+                        ->label('Unduh Bukti Pembayaran')
+                        ->icon('heroicon-o-arrow-down-tray')
+                        ->action(function (Team $record) {
+                            $mediaItem = $record->getFirstMedia('payment-proofs');
+                            return $mediaItem ? response()->download($mediaItem->getPath(), $mediaItem->file_name) : null;
+                        })
+                        ->visible(fn (Team $record): bool => $record->hasMedia('payment-proofs')),
+                ])->label('Dokumen')->icon('heroicon-o-document-text'),
             ]);
     }
     

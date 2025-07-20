@@ -1,6 +1,5 @@
 <?php
 
-
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\ParticipantResource\Pages;
@@ -11,7 +10,9 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
-use Filament\Tables\Columns\SpatieMediaLibraryImageColumn;
+use Filament\Tables\Actions\ActionGroup;
+use Filament\Tables\Actions\Action;
+use Illuminate\Support\Collection; 
 
 class ParticipantResource extends Resource
 {
@@ -36,9 +37,10 @@ class ParticipantResource extends Resource
                     ])->columns(2),
                 Forms\Components\Section::make('Dokumen Peserta')
                     ->schema([
-                        SpatieMediaLibraryFileUpload::make('studentproof')
+                        SpatieMediaLibraryFileUpload::make('student_proof')
                             ->collection('student-proofs')
-                            ->label('Kartu Pelajar/Mahasiswa'),
+                            ->label('Kartu Pelajar/Mahasiswa')
+                            ->acceptedFileTypes(['image/*', 'application/pdf']),
                         SpatieMediaLibraryFileUpload::make('twibbon_proof')
                             ->collection('twibbon-proofs')
                             ->label('Bukti Twibbon'),
@@ -49,14 +51,85 @@ class ParticipantResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->defaultSort('created_at', 'desc')
             ->columns([
-                Tables\Columns\TextColumn::make('full_name')->label('Nama Lengkap')->searchable()->sortable(),
-                Tables\Columns\TextColumn::make('email')->label('Email')->searchable(),
-                Tables\Columns\TextColumn::make('nisn')->label('NISN'),
-                SpatieMediaLibraryImageColumn::make('student_proofs')->collection('student-proofs')->label('Dokumen Bukti Siswa'),
+                Tables\Columns\TextColumn::make('full_name')
+                    ->label('Nama Lengkap')
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('nisn')
+                    ->label('NISN')
+                    ->searchable(),
+                
+   
+                Tables\Columns\TextColumn::make('teamMemberships.team.name')
+                    ->label('Tim Terdaftar')
+                    ->formatStateUsing(function ($state) {
+                        if ($state instanceof Collection) {
+                            return $state->implode(', ');
+                        }
+                        return $state;
+                    })
+                    ->limit(50),
+
+                Tables\Columns\TextColumn::make('email')
+                    ->label('Email')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('phone_number')
+                    ->label('No. Telepon')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->filters([
+                Tables\Filters\SelectFilter::make('competition')
+                    ->label('Filter Berdasarkan Kompetisi')
+                    ->relationship('teamMemberships.team.registration.competition', 'name')
+                    ->searchable()
+                    ->preload(),
+            ])
+
             ->actions([
                 Tables\Actions\EditAction::make(),
+                
+                ActionGroup::make([
+                    Action::make('viewStudentProof')
+                        ->label('Lihat Bukti Siswa')
+                        ->icon('heroicon-o-eye')
+                        ->modalContent(fn (Participant $record): \Illuminate\Contracts\View\View => 
+                            view('filament.modals.view-media', ['media' => $record->getFirstMedia('student-proofs')]))
+                        ->modalSubmitAction(false)
+                        ->modalCancelActionLabel('Tutup')
+                        ->visible(fn (Participant $record): bool => $record->hasMedia('student-proofs')),
+
+                    Action::make('downloadStudentProof')
+                        ->label('Unduh Bukti Siswa')
+                        ->icon('heroicon-o-arrow-down-tray')
+                        ->action(function (Participant $record) {
+                            $mediaItem = $record->getFirstMedia('student-proofs');
+                            return response()->download($mediaItem->getPath(), $mediaItem->file_name);
+                        })
+                        ->visible(fn (Participant $record): bool => $record->hasMedia('student-proofs')),
+           
+                    Action::make('viewTwibbonProof')
+                        ->label('Lihat Bukti Twibbon')
+                        ->icon('heroicon-o-photo')
+                        ->modalContent(fn (Participant $record): \Illuminate\Contracts\View\View => 
+                            view('filament.modals.view-media', ['media' => $record->getFirstMedia('twibbon-proofs')]))
+                        ->modalSubmitAction(false)
+                        ->modalCancelActionLabel('Tutup')
+                        ->visible(fn (Participant $record): bool => $record->hasMedia('twibbon-proofs')),
+
+                    Action::make('downloadTwibbonProof')
+                        ->label('Unduh Bukti Twibbon')
+                        ->icon('heroicon-o-arrow-down-tray')
+                        ->action(function (Participant $record) {
+                            $mediaItem = $record->getFirstMedia('twibbon-proofs');
+                            return response()->download($mediaItem->getPath(), $mediaItem->file_name);
+                        })
+                        ->visible(fn (Participant $record): bool => $record->hasMedia('twibbon-proofs')),
+
+                ])->label('Dokumen')->icon('heroicon-o-document-text'),
             ]);
     }
     

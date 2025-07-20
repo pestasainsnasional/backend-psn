@@ -41,11 +41,14 @@ class RegistrationResource extends Resource
                                 'verified' => 'Verified',
                                 'rejected' => 'Rejected',
                             ])->required(),
-                        Forms\Components\Fieldset::make('Detail Tim')
-                            ->schema([
-                                Forms\Components\Textarea::make('team.name')->label('Nama Tim')->disabled(),
-                                Forms\Components\Textarea::make('competition.name')->label('Kompetisi')->disabled(),
-                            ])
+                        Forms\Components\Placeholder::make('team_name')
+                            ->label('Nama Tim')
+                            ->content(fn(?Registration $record): string => $record?->team?->name ?? 'Tidak Ditemukan'),
+                        Forms\Components\Placeholder::make('competition_name')
+                            ->label('Kompetisi')
+                            ->content(fn(?Registration $record): string => $record?->competition?->name ?? 'Tidak Ditemukan'),
+                        Forms\Components\TextInput::make('payment_unique_code')->required()->disabled(),
+
                     ])
             ]);
     }
@@ -60,7 +63,7 @@ class RegistrationResource extends Resource
                 Tables\Columns\TextColumn::make('team.name')
                     ->label('Nama Tim')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('participant.full_name') 
+                Tables\Columns\TextColumn::make('participant.full_name')
                     ->label('Nama Leader')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('competition.name')
@@ -71,24 +74,33 @@ class RegistrationResource extends Resource
                     ->date('d M Y')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('status')
-                    ->badge() // <-- Mengubahnya menjadi badge
-                    ->formatStateUsing(fn (string $state): string => match ($state) {
-                        'draft_step_1' => 'Draf (Step 1)', 'draft_step_2' => 'Draf (Step 2)', 'draft_step_3' => 'Draf (Step 3)',
-                        'draft_step_4' => 'Menunggu Finalisasi', 'pending' => 'Pending', 'verified' => 'Terverifikasi', 'rejected' => 'Ditolak',
+                    ->badge()
+                    ->formatStateUsing(fn(string $state): string => match ($state) {
+                        'draft_step_1' => 'Draf (Step 1)',
+                        'draft_step_2' => 'Draf (Step 2)',
+                        'draft_step_3' => 'Draf (Step 3)',
+                        'draft_step_4' => 'Menunggu Finalisasi',
+                        'pending' => 'Pending',
+                        'verified' => 'Terverifikasi',
+                        'rejected' => 'Ditolak',
                         default => $state,
-                    })->color(fn (string $state): string => match ($state) {
-                        'draft_step_1', 'draft_step_2', 'draft_step_3' => 'info', 'draft_step_4' => 'primary', 'pending' => 'warning',
-                        'verified' => 'success', 'rejected' => 'danger', default => 'gray',
+                    })->color(fn(string $state): string => match ($state) {
+                        'draft_step_1', 'draft_step_2', 'draft_step_3' => 'info',
+                        'draft_step_4' => 'primary',
+                        'pending' => 'warning',
+                        'verified' => 'success',
+                        'rejected' => 'danger',
+                        default => 'gray',
                     })->sortable(),
                 Tables\Columns\TextColumn::make('payment_unique_code')
                     ->label('Kode Pembayaran')
                     ->copyable()
-                    ->toggleable(isToggledHiddenByDefault: true), 
-                   Tables\Columns\TextColumn::make('updated_at')
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('updated_at')
                     ->label('Durasi di Status Ini')
-                    ->since() 
+                    ->since()
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true), 
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('competition.competitionType.type')
                     ->label('Tipe Lomba')
@@ -96,13 +108,13 @@ class RegistrationResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
 
-            
+
             ->filters([
                 Tables\Filters\SelectFilter::make('competition_id')
                     ->label('Kompetisi')
                     ->options(Competition::all()->pluck('name', 'id')->toArray())
                     ->searchable(),
-                
+
                 Tables\Filters\SelectFilter::make('competition_type')
                     ->label('Jenis Kompetisi')
                     ->options([
@@ -119,17 +131,17 @@ class RegistrationResource extends Resource
                             $query->where('type', $value);
                         });
                     }),
-              
+
 
                 Tables\Filters\SelectFilter::make('status')
-                ->options([
-                    'draft_step_1' => 'Draf (Step 1)',
-                    'draft_step_2' => 'Draf (Step 2)',
-                    'draft_step_3' => 'Menunggu Pembayaran',
-                    'draft_step_4' => 'Menunggu Finalisasi',
-                    'pending' => 'Pending',
-                    'verified' => 'Terverifikasi',
-                    'rejected' => 'Ditolak',
+                    ->options([
+                        'draft_step_1' => 'Draf (Step 1)',
+                        'draft_step_2' => 'Draf (Step 2)',
+                        'draft_step_3' => 'Menunggu Pembayaran',
+                        'draft_step_4' => 'Menunggu Finalisasi',
+                        'pending' => 'Pending',
+                        'verified' => 'Terverifikasi',
+                        'rejected' => 'Ditolak',
                     ]),
                 Filter::make('created_at')
                     ->form([
@@ -138,8 +150,8 @@ class RegistrationResource extends Resource
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query
-                            ->when($data['created_from'], fn (Builder $query, $date): Builder => $query->whereDate('created_at', '>=', $date))
-                            ->when($data['created_until'], fn (Builder $query, $date): Builder => $query->whereDate('created_at', '<=', $date));
+                            ->when($data['created_from'], fn(Builder $query, $date): Builder => $query->whereDate('created_at', '>=', $date))
+                            ->when($data['created_until'], fn(Builder $query, $date): Builder => $query->whereDate('created_at', '<=', $date));
                     }),
             ])
             ->actions([
@@ -150,13 +162,13 @@ class RegistrationResource extends Resource
                 BulkActionGroup::make([
                     BulkAction::make('verify')
                         ->label('Verifikasi Terpilih')
-                        ->action(fn (Collection $records) => $records->each->update(['status' => 'verified']))
+                        ->action(fn(Collection $records) => $records->each->update(['status' => 'verified']))
                         ->requiresConfirmation()
                         ->color('success')
                         ->icon('heroicon-o-check-circle'),
                     BulkAction::make('reject')
                         ->label('Tolak Terpilih')
-                        ->action(fn (Collection $records) => $records->each->update(['status' => 'rejected']))
+                        ->action(fn(Collection $records) => $records->each->update(['status' => 'rejected']))
                         ->requiresConfirmation()
                         ->color('danger')
                         ->icon('heroicon-o-x-circle'),
@@ -168,7 +180,7 @@ class RegistrationResource extends Resource
                 ]),
             ]);
     }
-    
+
     public static function getPages(): array
     {
         return [
@@ -176,5 +188,5 @@ class RegistrationResource extends Resource
             'edit' => Pages\EditRegistration::route('/{record}/edit'),
             'view' => Pages\ViewRegistration::route('/{record}'),
         ];
-    }    
+    }
 }

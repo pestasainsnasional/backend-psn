@@ -7,15 +7,21 @@ use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Builder; // <-- 1. TAMBAHKAN IMPORT INI
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Infolists;
 use Filament\Infolists\Infolist;
 use Filament\Tables\Actions\Action;
+use App\Models\TeamMember; // <-- Import untuk type-hinting
 
 class TeamMembersRelationManager extends RelationManager
 {
     protected static string $relationship = 'teamMembers';
+    public function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->whereHas('participant'); 
+    }
 
     public function form(Form $form): Form
     {
@@ -30,15 +36,12 @@ class TeamMembersRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('participant.full_name')
             ->columns([
-                // Menarik nama lengkap dari relasi 'participant' di model TeamMember
                 Tables\Columns\TextColumn::make('participant.full_name')
                     ->label('Nama Anggota')
                     ->searchable(),
-
                 Tables\Columns\TextColumn::make('role')
                     ->label('Peran')
                     ->badge(),
-
                 Tables\Columns\TextColumn::make('participant.nisn')
                     ->label('NISN'),
             ])
@@ -46,15 +49,18 @@ class TeamMembersRelationManager extends RelationManager
                 //
             ])
             ->headerActions([
-                // Tables\Actions\CreateAction::make(),
+
             ])
             ->actions([
-                // INI ADALAH TOMBOL UNTUK MELIHAT DETAIL DALAM MODAL
                 Action::make('Lihat Detail')
                     ->icon('heroicon-o-eye')
-                    ->infolist(function (Infolist $infolist, $record) {
+                    ->infolist(function (Infolist $infolist, TeamMember $record) {
+                        // Pastikan kita punya participant sebelum membuat schema
+                        if (!$record->participant) {
+                            return $infolist->schema([]);
+                        }
                         return $infolist
-                            ->record($record->participant) // Menggunakan data dari participant
+                            ->record($record->participant) 
                             ->schema([
                                 Infolists\Components\Section::make('Data Detail Peserta')
                                     ->schema([
@@ -64,17 +70,20 @@ class TeamMembersRelationManager extends RelationManager
                                         Infolists\Components\TextEntry::make('date_of_birth')->label('Tanggal Lahir')->date(),
                                         Infolists\Components\TextEntry::make('phone_number')->label('No. Telepon'),
                                         Infolists\Components\TextEntry::make('address')->label('Alamat')->columnSpanFull(),
-                                        Infolists\Components\SpatieMediaLibraryImageEntry::make('identity_card')
-                                            ->label('Kartu Identitas')
-                                            ->collection('identity-cards'),
+                                        
+                                        // 3. Sesuaikan nama koleksi dengan yang ada di Model Participant Anda
+                                        Infolists\Components\SpatieMediaLibraryImageEntry::make('student_proofs')
+                                            ->label('Kartu Pelajar/Mahasiswa')
+                                            ->collection('student-proofs'),
+                                        Infolists\Components\SpatieMediaLibraryImageEntry::make('twibbon_proofs')
+                                            ->label('Bukti Twibbon')
+                                            ->collection('twibbon-proofs'),
                                     ])->columns(2),
                             ]);
                     })
                     ->modalSubmitAction(false) 
                     ->modalCancelActionLabel('Tutup'),
             ])
-            ->bulkActions([
-                
-            ]);
+            ->bulkActions([]);
     }
 }

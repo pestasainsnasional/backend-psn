@@ -16,4 +16,14 @@ class EditRegistration extends EditRecord
             Actions\DeleteAction::make(),
         ];
     }
+
+     protected function mutateFormDataBeforeFill(array $data): array
+    {
+     
+        $registration = $this->getRecord()->load(['team', 'competition']);
+        $data['team.name'] = $registration->team?->name;
+        $data['competition.name'] = $registration->competition?->name;
+        
+        return $data;
+    }
 }
