@@ -1,4 +1,5 @@
 <?php
+// File: app/Notifications/RegistrationVerified.php
 
 namespace App\Notifications;
 
@@ -16,7 +17,7 @@ class RegistrationVerified extends Notification
 
     public function __construct(Registration $registration)
     {
-        $this->registration = $registration;
+        $this->registration = $registration->load(['team', 'competition.competitionType', 'participant']);
     }
 
     public function via(object $notifiable): array
@@ -24,20 +25,35 @@ class RegistrationVerified extends Notification
         return ['mail'];
     }
 
-
-
+    /**
+     * Get the mail representation of the notification.
+     */
     public function toMail(object $notifiable): MailMessage
     {
-        $teamName = $this->registration->team->name;
-        $url = url('/dashboard'); 
+        $competitionType = $this->registration->competition->competitionType->type;
+        $competitionName = $this->registration->competition->name;
+        $profileUrl = env('FRONTEND_URL', url('/')) . '/profile'; 
+        $groupLink = 'https://ipb.link/group-peserta-psn2025';
 
-        return (new MailMessage)
-                    ->subject('Selamat! Pendaftaran Anda Telah Diverifikasi - ' . $teamName)
-                    ->greeting('Kabar Baik, ' . $notifiable->name . '!')
-                    ->line('Kami dengan senang hati memberitahukan bahwa pendaftaran Anda untuk tim "' . $teamName . '" telah berhasil diverifikasi oleh admin.')
-                    ->line('Anda sekarang resmi menjadi peserta. Silakan persiapkan diri Anda untuk kompetisi.')
-                    ->action('Masuk ke Dashboard', $url)
-                    ->line('Sampai jumpa di hari acara!');
+        $mailMessage = (new MailMessage)
+                    ->subject('Pendaftaran Terverifikasi: ' . $competitionName)
+                    ->greeting('Selamat, ' . $notifiable->name . '!')
+                    ->line('Kami dengan senang hati menginformasikan bahwa pendaftaran Anda telah berhasil kami verifikasi.');
+
+ 
+        if ($competitionType === 'individu') {
+            $leaderName = $this->registration->participant->full_name;
+            $mailMessage->line('Pendaftaran Anda untuk kompetisi "' . $competitionName . '" atas nama **' . $leaderName . '** telah dikonfirmasi.');
+        } else {
+            $teamName = $this->registration->team->name;
+            $mailMessage->line('Pendaftaran tim Anda, **"' . $teamName . '"**, untuk kompetisi "' . $competitionName . '" telah dikonfirmasi.');
+        }
+
+        return $mailMessage
+                    ->line('Anda sekarang resmi terdaftar sebagai peserta. Langkah selanjutnya adalah bergabung dengan grup WhatsApp peserta melalui tautan di bawah ini untuk mendapatkan informasi penting terkait teknis lomba.')
+                    ->line('Grup Peserta: **' . $groupLink . '**') 
+                    ->action('Kunjungi halaman profile anda', $profileUrl)
+                    ->line('Terima kasih atas partisipasi Anda. Sampai jumpa di Pesta Sains Nasional 2025!');
     }
 
     public function toArray(object $notifiable): array

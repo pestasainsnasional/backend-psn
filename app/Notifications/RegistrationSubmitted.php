@@ -1,4 +1,5 @@
 <?php
+// File: app/Notifications/RegistrationSubmitted.php
 
 namespace App\Notifications;
 
@@ -18,7 +19,7 @@ class RegistrationSubmitted extends Notification
      */
     public function __construct(Registration $registration)
     {
-        $this->registration = $registration;
+        $this->registration = $registration->load(['team', 'competition.competitionType', 'participant']);
     }
 
 
@@ -27,19 +28,35 @@ class RegistrationSubmitted extends Notification
         return ['mail'];
     }
 
+    /**
+     * Get the mail representation of the notification.
+     */
     public function toMail(object $notifiable): MailMessage
     {
-        $teamName = $this->registration->team->name;
-        $url = url('/dashboard/status'); 
+
+        $competitionType = $this->registration->competition->competitionType->type;
+        $competitionName = $this->registration->competition->name;
+        $profileUrl = env('FRONTEND_URL', url('/')) . '/profile'; 
+
+        $mailMessage = (new MailMessage)
+                    ->subject('Pendaftaran Anda Telah Diterima: ' . $competitionName)
+                    ->greeting('Halo, ' . $notifiable->name . '!')
+                    ->line('Terima kasih telah menyelesaikan pendaftaran Anda.');
 
 
-        return (new MailMessage)
-            ->subject('Pendaftaran anda telah diterima -' . $teamName)
-             ->greeting('Halo, ' . $notifiable->name . '!')
-            ->line('Terima kasih telah menyelesaikan pendaftaran untuk tim "' . $teamName . '".')
-            ->line('Data Anda telah kami terima dan akan segera masuk ke dalam antrean untuk diverifikasi oleh tim kami.')
-            ->action('Lihat Status Pendaftaran', $url)
-            ->line('Terima kasih telah menjadi bagian dari acara kami!');
+        if ($competitionType === 'individu') {
+            $leaderName = $this->registration->participant->full_name;
+            $mailMessage->line('Pendaftaran Anda untuk kompetisi "' . $competitionName . '" atas nama **' . $leaderName . '** telah kami terima.');
+        } else {
+            $teamName = $this->registration->team->name;
+            $mailMessage->line('Pendaftaran tim Anda, **"' . $teamName . '"**, untuk kompetisi "' . $competitionName . '" telah kami terima.');
+        }
+  
+
+        return $mailMessage
+                    ->line('Data Anda akan segera masuk ke dalam antrean untuk diverifikasi oleh tim kami. Anda akan menerima email pemberitahuan selanjutnya setelah proses verifikasi selesai.')
+                    ->action('Lihat Status Pendaftaran', $profileUrl)
+                    ->line('Terima kasih telah menjadi bagian dari acara kami!');
     }
 
     /**
