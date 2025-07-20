@@ -2,25 +2,26 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\RegistrationResource\Pages;
-use App\Models\Registration;
-use App\Models\Competition;
-use App\Models\CompetitionType;
-use App\Filament\Exports\RegistrationExporter;
 use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Forms\Form;
 use Filament\Tables\Table;
-use Filament\Tables\Actions\ExportAction;
-use Filament\Tables\Actions\BulkActionGroup;
+use App\Models\Competition;
+use App\Models\Registration;
+use App\Models\CompetitionType;
+use Filament\Resources\Resource;
+use Illuminate\Support\Collection;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Actions\BulkAction;
+use Filament\Notifications\Notification;
+use Filament\Forms\Components\DatePicker;
+use Filament\Tables\Actions\ExportAction;
+use Illuminate\Database\Eloquent\Builder;
+use Filament\Tables\Actions\BulkActionGroup;
 use Filament\Tables\Actions\DeleteBulkAction;
 use Filament\Tables\Actions\ExportBulkAction;
-use Filament\Tables\Filters\Filter;
-use Filament\Forms\Components\DatePicker;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Collection;
+use App\Filament\Exports\RegistrationExporter;
+use App\Filament\Resources\RegistrationResource\Pages;
 
 class RegistrationResource extends Resource
 {
@@ -157,6 +158,11 @@ class RegistrationResource extends Resource
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->hidden(function (Registration $record) {
+                        $protectedStatuses = ['draft_step_4', 'pending', 'verified'];
+                        return in_array($record->status, $protectedStatuses);
+                    }),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
@@ -173,7 +179,21 @@ class RegistrationResource extends Resource
                         ->color('danger')
                         ->icon('heroicon-o-x-circle'),
                     DeleteBulkAction::make()
-                        ->label('Hapus Terpilih'),
+                        ->label('Hapus Terpilih')
+                        ->requiresConfirmation()
+                        ->action(function (Collection $records) {
+                            $protectedStatuses = ['draft_step_4', 'pending', 'verified'];
+                            $hasProtectedRecords = $records->contains(fn ($record) => in_array($record->status, $protectedStatuses));
+                            if ($hasProtectedRecords) {
+                                Notification::make()
+                                    ->title('HAPUS DATA DITOLAK')
+                                    ->body('Tidak dapat menghapus karena salah satu data yang dipilih sudah dalam tahap pembayaran atau final.')
+                                    ->danger()
+                                    ->send();
+                                return;
+                            }
+                            $records->each->delete();
+                        }),
                     ExportBulkAction::make()
                         ->label('Export Terpilih ke Excel')
                         ->exporter(RegistrationExporter::class),
