@@ -79,7 +79,7 @@ class RegistrationResource extends Resource
                     ->formatStateUsing(fn(string $state): string => match ($state) {
                         'draft_step_1' => 'Draf (Step 1)',
                         'draft_step_2' => 'Draf (Step 2)',
-                        'draft_step_3' => 'Draf (Step 3)',
+                        'draft_step_3' => 'Menunggu Pembayaran',
                         'draft_step_4' => 'Menunggu Finalisasi',
                         'pending' => 'Pending',
                         'verified' => 'Terverifikasi',
