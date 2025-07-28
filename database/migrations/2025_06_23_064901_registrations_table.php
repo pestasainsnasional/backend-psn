@@ -19,6 +19,7 @@ return new class extends Migration
             $table->timestamp('payment_code_expires_at')->nullable();
             $table->enum('status', ['draft_step_1','draft_step_2','draft_step_3','draft_step_4', 'pending', 'verified', 'rejected'])->default('draft_step_1');
             $table->timestamps();
+            
         });
     }
 

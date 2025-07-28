@@ -125,7 +125,7 @@ class RegistrationController extends Controller
 
         foreach ($allNisns as $nisn) {
             $isAlreadyRegistered = Participant::where('nisn', $nisn)
-                ->whereHas('teamMemberships.team.registration', function ($query) use ($registrationIdToIgnore) {
+                ->whereHas('teamMembers.team.registration', function ($query) use ($registrationIdToIgnore) {
                     $query->whereIn('status', ['draft_step_3', 'draft_step_4', 'pending', 'verified'])
                         ->where('id', '!=', $registrationIdToIgnore);
                 })
@@ -202,6 +202,7 @@ class RegistrationController extends Controller
         return response()->json(['message' => 'Langkah 2 berhasil disimpan.', 'registration_id' => $registration->id]);
     }
 
+
     public function storeStep3(Request $request)
     {
         $validated = $request->validate([
@@ -234,7 +235,11 @@ class RegistrationController extends Controller
                         }
                         $competitionType->decrement('slot_remaining');
                     }
-                    $registration->update(['status' => 'draft_step_3']);
+
+                    $registration->update([
+                        'status' => 'draft_step_3',
+                        'competition_batch' => $competitionType->current_batch
+                    ]);
                 }
                 $registration->team()->update($request->except('registration_id'));
             });
@@ -243,6 +248,10 @@ class RegistrationController extends Controller
         }
         return response()->json(['message' => 'Langkah 3 berhasil disimpan dan slot Anda telah diamankan sementara.', 'registration_id' => $registration->id]);
     }
+
+
+
+
 
     public function getPaymentCode(Request $request, string $registration_id)
     {

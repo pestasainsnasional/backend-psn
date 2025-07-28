@@ -34,6 +34,17 @@ class Participant extends Model implements HasMedia
         return ['date_of_birth' => 'date',  ];
     }
 
+    protected static function booted(): void
+    {
+    parent::boot();
+
+    static::deleting(function (Participant $participant) {
+        $participant->teamMembers()->each(function ($teamMember) {
+            $teamMember->delete();
+        });
+    });
+    }
+
     public function registerMediaCollections(): void
     {
         $this
@@ -50,7 +61,7 @@ class Participant extends Model implements HasMedia
         return $this->belongsTo(User::class);
     }
 
-    public function teamMemberships(): HasMany
+    public function teamMembers(): HasMany
     {
         return $this->hasMany(TeamMember::class, 'participant_id');
     }

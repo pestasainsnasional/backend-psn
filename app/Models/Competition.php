@@ -9,10 +9,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Competition extends Model implements HasMedia
 {
-    use HasFactory, HasUlids, InteractsWithMedia;
+    use HasFactory, HasUlids, InteractsWithMedia, SoftDeletes;
 
     public $incrementing = false;
     protected $keyType = 'string';
@@ -28,6 +29,24 @@ class Competition extends Model implements HasMedia
         'major',
         'is_active',
     ];
+
+    protected static function booted(): void
+    {
+
+        static::deleting(function (Competition $competition) {
+            foreach ($competition->registrations as $registration) {
+                $registration->delete();
+            }
+        });
+
+        static::restoring(function (Competition $competition) {
+            $registrationsToRestore = $competition->registrations()->withTrashed()->get();
+            foreach ($registrationsToRestore as $registration) {
+                $registration->restore();
+            }
+        });
+    }
+
 
     protected function casts(): array
     {

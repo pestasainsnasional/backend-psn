@@ -8,10 +8,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo; 
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class CompetitionType extends Model
 {
-    use HasFactory, HasUlids;
+    use HasFactory, HasUlids, SoftDeletes;
 
     public $incrementing = false;
     protected $keyType = 'string';
@@ -26,7 +27,7 @@ class CompetitionType extends Model
         'price',
     ];
     
-    protected static function boot()
+   protected static function booted(): void
     {
         parent::boot();
 
@@ -35,7 +36,24 @@ class CompetitionType extends Model
                 $model->created_by = Auth::id();
             }
         });
+
+      
+        static::deleting(function (CompetitionType $competitionType) {
+            foreach ($competitionType->competitions as $competition) {
+                $competition->delete();
+            }
+        });
+
+
+        static::restoring(function (CompetitionType $competitionType) {
+
+            $competitionsToRestore = $competitionType->competitions()->withTrashed()->get();
+            foreach ($competitionsToRestore as $competition) {
+                $competition->restore(); 
+            }
+        });
     }
+    
     
     protected function casts(): array
     {

@@ -6,6 +6,8 @@ use App\Models\Registration;
 use Filament\Actions\Exports\ExportColumn;
 use Filament\Actions\Exports\Exporter;
 use Filament\Actions\Exports\Models\Export;
+use carbon\carbon;
+
 
 class RegistrationExporter extends Exporter
 {
@@ -19,13 +21,13 @@ class RegistrationExporter extends Exporter
             ExportColumn::make('status'),
             ExportColumn::make('competition.name')->label('Kompetisi'),
 
-            ExportColumn::make('competition.competitionType.name')->label('Jenis Kompetisi'),
+            ExportColumn::make('competition.competitionType.type')->label('Jenis Kompetisi'),
             ExportColumn::make('registration_batch')
                 ->label('Gelombang Pendaftaran')
                 ->state(function (Registration $record) {
-                    $batch = $record->competition?->competitionType?->current_batch;
-                    if ($batch === 'presale_1') return 'Pre-sale 1';
-                    if ($batch === 'presale_2') return 'Pre-sale 2';
+                    $batch = $record->competition_batch;
+                    if ($batch === 'pre-sale-1') return 'Pre-sale 1';
+                    if ($batch === 'pre-sale-2') return 'Pre-sale 2';
                     if ($batch === 'regular') return 'Regular';
                     return 'N/A';
                 }),
@@ -36,6 +38,10 @@ class RegistrationExporter extends Exporter
             ExportColumn::make('team.name')->label('Nama Tim'),
             ExportColumn::make('team.school_name')->label('Asal Sekolah'),
             ExportColumn::make('payment_unique_code')->label('Kode Pembayaran'),
+            ExportColumn::make('team_payment_proof_url')
+                ->label('URL Bukti Pembayaran Tim')
+                ->state(fn (Registration $record) => $record->team?->getFirstMediaUrl('payment-proofs') ?: null),
+
 
             ExportColumn::make('team.companion_teacher_name')->label('Nama Guru'),
             ExportColumn::make('team.companion_teacher_contact')->label('Kontak Guru'),
@@ -60,6 +66,13 @@ class RegistrationExporter extends Exporter
             ExportColumn::make('leader_address')
                 ->label('Alamat Leader')
                 ->state(fn (Registration $record) => $record->team?->teamMembers->firstWhere('role', 'leader')?->participant?->address ?? 'N/A'),
+            ExportColumn::make('leader_student_proof_url')
+                ->label('URL Bukti Siswa Leader')
+                ->state(fn (Registration $record) => $record->team?->teamMembers->firstWhere('role', 'leader')?->participant?->getFirstMediaUrl('student-proofs') ?? null),
+            ExportColumn::make('leader_twibbon_proof_url')
+                ->label('URL Bukti Twibbon Leader')
+                ->state(fn (Registration $record) => $record->team?->teamMembers->firstWhere('role', 'leader')?->participant?->getFirstMediaUrl('twibbon-proofs') ?? null),
+      
 
 
             ExportColumn::make('member1_name')
@@ -80,6 +93,12 @@ class RegistrationExporter extends Exporter
             ExportColumn::make('member1_address')
                 ->label('Alamat Anggota 1')
                 ->state(fn (Registration $record) => $record->team?->teamMembers->where('role', 'member')->values()->get(0)?->participant?->address ?? 'N/A'),
+            ExportColumn::make('member1_student_proof_url')
+                ->label('URL Bukti Siswa Anggota 1')
+                ->state(fn (Registration $record) => $record->team?->teamMembers->where('role', 'member')->values()->get(0)?->participant?->getFirstMediaUrl('student-proofs') ?? null),
+            ExportColumn::make('member1_twibbon_proof_url')
+                ->label('URL Bukti Twibbon Anggota 1')
+                ->state(fn (Registration $record) => $record->team?->teamMembers->where('role', 'member')->values()->get(0)?->participant?->getFirstMediaUrl('twibbon-proofs') ?? null),
 
 
             ExportColumn::make('member2_name')
@@ -100,6 +119,13 @@ class RegistrationExporter extends Exporter
             ExportColumn::make('member2_address')
                 ->label('Alamat Anggota 2')
                 ->state(fn (Registration $record) => $record->team?->teamMembers->where('role', 'member')->values()->get(1)?->participant?->address ?? 'N/A'),
+            ExportColumn::make('member2_student_proof_url')
+                ->label('URL Bukti Siswa Anggota 2')
+                ->state(fn (Registration $record) => $record->team?->teamMembers->where('role', 'member')->values()->get(1)?->participant?->getFirstMediaUrl('student-proofs') ?? null),
+            ExportColumn::make('member2_twibbon_proof_url')
+                ->label('URL Bukti Twibbon Anggota 2')
+                ->state(fn (Registration $record) => $record->team?->teamMembers->where('role', 'member')->values()->get(1)?->participant?->getFirstMediaUrl('twibbon-proofs') ?? null),
+            
         ];
     }
 
@@ -117,5 +143,11 @@ class RegistrationExporter extends Exporter
     public function getJobConnection(): ?string
     {
         return 'sync';
+    }
+
+    public function getFileName(Export $export):string
+    {
+        $timestamp = Carbon::now()->format('d-m-Y_H-i-s');
+        return "Data_Registrasi_{$timestamp}";
     }
 }

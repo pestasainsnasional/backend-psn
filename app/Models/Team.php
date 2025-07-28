@@ -9,10 +9,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Team extends Model implements HasMedia
 {
-    use HasFactory, HasUlids, InteractsWithMedia;
+    use HasFactory, HasUlids, InteractsWithMedia, SoftDeletes;
 
     public $incrementing = false;
     protected $keyType = 'string';
@@ -28,19 +29,34 @@ class Team extends Model implements HasMedia
         'companion_teacher_nip',
     ];
 
-       public function registerMediaCollections(): void
+
+    protected static function booted(): void
+    {
+  
+        static::deleting(function (Team $team) {
+            $team->teamMembers()->each(function ($teamMember) {
+                $teamMember->delete();
+            });
+        });
+
+        static::restoring(function (Team $team) {
+            $team->teamMembers()->withTrashed()->each(function ($teamMember) {
+                $teamMember->restore();
+            });
+        });
+    }
+
+    public function registerMediaCollections(): void
     {
         $this
             ->addMediaCollection('payment-proofs') 
             ->singleFile(); 
     }
 
-  
     public function teamMembers(): HasMany
     {
         return $this->hasMany(TeamMember::class);
     }
-
 
     public function registration(): HasOne
     {

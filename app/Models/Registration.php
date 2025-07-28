@@ -7,10 +7,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Notifications\RegistrationVerified;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Registration extends Model
 {
-    use HasFactory, HasUlids;
+    use HasFactory, HasUlids, SoftDeletes;
 
     public $incrementing = false;
     protected $keyType = 'string';
@@ -19,6 +20,7 @@ class Registration extends Model
         'user_id',
         'participant_id',
         'competition_id',
+        'competition_batch',
         'team_id',
         'payment_unique_code',
         'payment_code_expires_at',
@@ -42,19 +44,26 @@ class Registration extends Model
         });
 
         static::deleting(function (Registration $registration) {
-            
-            $statusesThatTookSlot = ['draft_step_3', 'draft_step_4', 'pending', 'verified'];
-            if (in_array($registration->status, $statusesThatTookSlot)) {
+        
+        $statusesThatTookSlot = ['draft_step_3', 'draft_step_4', 'pending', 'verified'];
+        if (in_array($registration->status, $statusesThatTookSlot)) {
+            if ($registration->competition_batch !== 'regular') {
                 $competitionType = $registration->competition?->competitionType;
-                if ($competitionType && $competitionType->current_batch !== 'regular') {
+                if ($competitionType) {
                     $competitionType->increment('slot_remaining');
                 }
             }
-            
-            if ($registration->team) {
-                $participantIds = $registration->team->teamMembers()->pluck('participant_id');
-                Participant::whereIn('id', $participantIds)->delete();
-                $registration->team->delete();
+        }
+        
+        if ($registration->team) {
+            $registration->team->delete();
+        }
+    });
+
+        static::restoring(function (Registration $registration) {
+            $teamToRestore = $registration->team()->withTrashed()->first();
+            if ($teamToRestore) {
+                $teamToRestore->restore();
             }
         });
     }

@@ -22,6 +22,9 @@ use Filament\Tables\Actions\DeleteBulkAction;
 use Filament\Tables\Actions\ExportBulkAction;
 use App\Filament\Exports\RegistrationExporter;
 use App\Filament\Resources\RegistrationResource\Pages;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Filament\Forms\Components\Select;
+
 
 class RegistrationResource extends Resource
 {
@@ -107,14 +110,34 @@ class RegistrationResource extends Resource
                     ->label('Tipe Lomba')
                     ->badge()
                     ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('deleted_at')->label('Tanggal Dihapus')->dateTime()->sortable()->toggleable(isToggledHiddenByDefault: true),
             ])
 
 
             ->filters([
-                Tables\Filters\SelectFilter::make('competition_id')
-                    ->label('Kompetisi')
-                    ->options(Competition::all()->pluck('name', 'id')->toArray())
-                    ->searchable(),
+
+               Filter::make('trashed_records')
+                    ->label('Status Catatan Dihapus')
+                    ->form([
+                        Select::make('status_deleted')
+                            ->options([
+                                'without' => 'Data Bersih',
+                                'only' => 'Data Trash',
+                            ])
+                            ->default('without') 
+                            ->disablePlaceholderSelection(), 
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        if (empty($data['status_deleted'])) {
+                            return $query; 
+                        }
+
+                        if ($data['status_deleted'] === 'only') {
+                            return $query->onlyTrashed();
+                        }
+
+                        return $query->withoutTrashed();
+                    }),
 
                 Tables\Filters\SelectFilter::make('competition_type')
                     ->label('Jenis Kompetisi')
@@ -158,10 +181,14 @@ class RegistrationResource extends Resource
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\RestoreAction::make()->hidden(fn(Registration $record): bool => !$record->trashed()),
+                Tables\Actions\ForceDeleteAction::make()->icon('heroicon-o-x-mark')->hidden(fn(Registration $record): bool => !$record->trashed()),
                 Tables\Actions\DeleteAction::make()
+                    ->label('Move to Trash')
+                    ->icon('heroicon-o-trash')
                     ->hidden(function (Registration $record) {
                         $protectedStatuses = ['draft_step_4', 'pending', 'verified'];
-                        return in_array($record->status, $protectedStatuses);
+                        return $record->trashed() || in_array($record->status, $protectedStatuses);
                     }),
             ])
             ->bulkActions([
@@ -172,31 +199,59 @@ class RegistrationResource extends Resource
                         ->requiresConfirmation()
                         ->color('success')
                         ->icon('heroicon-o-check-circle'),
+
                     BulkAction::make('reject')
                         ->label('Tolak Terpilih')
                         ->action(fn(Collection $records) => $records->each->update(['status' => 'rejected']))
                         ->requiresConfirmation()
                         ->color('danger')
                         ->icon('heroicon-o-x-circle'),
+
+                    ExportBulkAction::make()
+                        ->label('Export Terpilih ke Excel')
+                        ->exporter(RegistrationExporter::class),
+
+
                     DeleteBulkAction::make()
-                        ->label('Hapus Terpilih')
-                        ->requiresConfirmation()
+                        ->label('Move to Trash')
+                        ->icon('heroicon-o-trash')
+                
+                        ->hidden(fn(\Filament\Resources\Pages\ListRecords $livewire): bool => $livewire->getTableFilterState('trashed_records')['status_deleted'] === 'only')
                         ->action(function (Collection $records) {
                             $protectedStatuses = ['draft_step_4', 'pending', 'verified'];
-                            $hasProtectedRecords = $records->contains(fn ($record) => in_array($record->status, $protectedStatuses));
+                            $hasProtectedRecords = $records->contains(fn($record) => in_array($record->status, $protectedStatuses));
                             if ($hasProtectedRecords) {
                                 Notification::make()
-                                    ->title('HAPUS DATA DITOLAK')
-                                    ->body('Tidak dapat menghapus karena salah satu data yang dipilih sudah dalam tahap pembayaran atau final.')
-                                    ->danger()
-                                    ->send();
+                                    ->title('MOVE TO TRASH DITOLAK')
+                                    ->body('Tidak dapat memindahkan karena salah satu data yang dipilih sudah dalam tahap pembayaran atau final.')
+                                    ->danger()->send();
                                 return;
                             }
                             $records->each->delete();
                         }),
-                    ExportBulkAction::make()
-                        ->label('Export Terpilih ke Excel')
-                        ->exporter(RegistrationExporter::class),
+
+                    Tables\Actions\RestoreBulkAction::make()
+                        ->hidden(fn(\Filament\Resources\Pages\ListRecords $livewire): bool => $livewire->getTableFilterState('trashed_records')['status_deleted'] !== 'only')
+                        ->requiresConfirmation(),
+
+                    BulkAction::make('forceDelete')
+                        ->label('Hapus Permanen')
+                        ->requiresConfirmation()
+                        ->color('danger')
+                        ->icon('heroicon-o-x-mark')
+                        ->hidden(fn(\Filament\Resources\Pages\ListRecords $livewire): bool => $livewire->getTableFilterState('trashed_records')['status_deleted'] !== 'only')
+                        ->action(function (Collection $records) {
+                            $protectedStatuses = ['draft_step_4', 'pending', 'verified'];
+                            $hasProtectedRecords = $records->contains(fn($record) => in_array($record->status, $protectedStatuses));
+                            if ($hasProtectedRecords) {
+                                Notification::make()
+                                    ->title('HAPUS PERMANEN DITOLAK')
+                                    ->body('Tidak dapat menghapus permanen karena salah satu data yang dipilih memiliki status yang dilindungi.')
+                                    ->danger()->send();
+                                return;
+                            }
+                            $records->each->forceDelete();
+                        }),
                 ]),
             ]);
     }
@@ -208,5 +263,13 @@ class RegistrationResource extends Resource
             'edit' => Pages\EditRegistration::route('/{record}/edit'),
             'view' => Pages\ViewRegistration::route('/{record}'),
         ];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->withoutGlobalScopes([
+                SoftDeletingScope::class,
+            ]);
     }
 }

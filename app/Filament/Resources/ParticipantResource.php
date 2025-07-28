@@ -12,7 +12,9 @@ use Filament\Tables\Table;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Tables\Actions\ActionGroup;
 use Filament\Tables\Actions\Action;
-use Illuminate\Support\Collection; 
+use Illuminate\Support\Collection;
+use App\Filament\Exports\ParticipantExporter;
+
 
 class ParticipantResource extends Resource
 {
@@ -62,7 +64,7 @@ class ParticipantResource extends Resource
                     ->searchable(),
                 
    
-                Tables\Columns\TextColumn::make('teamMemberships.team.name')
+                Tables\Columns\TextColumn::make('teamMembers.team.name')
                     ->label('Tim Terdaftar')
                     ->formatStateUsing(function ($state) {
                         if ($state instanceof Collection) {
@@ -84,7 +86,7 @@ class ParticipantResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('competition')
                     ->label('Filter Berdasarkan Kompetisi')
-                    ->relationship('teamMemberships.team.registration.competition', 'name')
+                    ->relationship('teamMembers.team.registration.competition', 'name')
                     ->searchable()
                     ->preload(),
             ])
@@ -130,7 +132,17 @@ class ParticipantResource extends Resource
                         ->visible(fn (Participant $record): bool => $record->hasMedia('twibbon-proofs')),
 
                 ])->label('Dokumen')->icon('heroicon-o-document-text'),
-            ]);
+                    ]);
+
+            // -> bulkActions([
+            // Tables\Actions\BulkActionGroup::make([
+            //         Tables\Actions\ExportBulkAction::make()
+            //             ->label('Ekspor Terpilih ke Excel') 
+            //             ->exporter(ParticipantExporter::class), 
+            //     ]),
+            // ]);
+
+            
     }
     
     public static function getPages(): array
