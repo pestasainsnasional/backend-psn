@@ -139,18 +139,17 @@ class RegistrationController extends Controller
 
         $registration = Registration::with('team.teamMembers.participant')->find($validated['registration_id']);
 
-
         DB::transaction(function () use ($request, $registration) {
-
+          
             $leaderData = $request->input('leader');
-            $leader = $registration->team->teamMembers()->where('role', 'leader')->first()?->participant;
-
-            if ($leader) {
-                $leader->update($leaderData);
-            } else {
-                $leader = Participant::create($leaderData);
-                TeamMember::create(['team_id' => $registration->team_id, 'participant_id' => $leader->id, 'role' => 'leader']);
-            }
+            $leader = Participant::updateOrCreate(
+                ['nisn' => $leaderData['nisn']], 
+                $leaderData                      
+            );
+            TeamMember::updateOrCreate(
+                ['team_id' => $registration->team_id, 'role' => 'leader'], 
+                ['participant_id' => $leader->id]                         
+            );
 
             if ($request->hasFile('leader.student_proof')) {
                 $leader->addMedia($request->file('leader.student_proof'))->toMediaCollection('student-proofs');
@@ -159,22 +158,20 @@ class RegistrationController extends Controller
                 $leader->addMedia($request->file('leader.twibbon_proof'))->toMediaCollection('twibbon-proofs');
             }
 
-            $existingMembers = $registration->team->teamMembers()->where('role', 'member')->get();
+            $processedParticipantIds = [];
             $incomingMembersData = $request->input('members', []);
 
-            $existingParticipantIds = $existingMembers->pluck('participant.id')->filter();
-            $processedParticipantIds = [];
-
             foreach ($incomingMembersData as $index => $memberData) {
-                $participant = null;
+                if (empty($memberData['nisn'])) continue; 
 
-                if (isset($existingMembers[$index]) && $existingMembers[$index]->participant) {
-                    $participant = $existingMembers[$index]->participant;
-                    $participant->update($memberData);
-                } else {
-                    $participant = Participant::create($memberData);
-                    TeamMember::create(['team_id' => $registration->team_id, 'participant_id' => $participant->id, 'role' => 'member']);
-                }
+                $participant = Participant::updateOrCreate(
+                    ['nisn' => $memberData['nisn']],
+                    $memberData                      
+                );
+                TeamMember::updateOrCreate(
+                    ['team_id' => $registration->team_id, 'participant_id' => $participant->id], 
+                    ['role' => 'member']                                                        
+                );
 
                 if ($request->hasFile("members.{$index}.student_proof")) {
                     $participant->addMedia($request->file("members.{$index}.student_proof"))->toMediaCollection('student-proofs');
@@ -184,20 +181,23 @@ class RegistrationController extends Controller
                 }
                 $processedParticipantIds[] = $participant->id;
             }
-            $participantIdsToDelete = $existingParticipantIds->diff($processedParticipantIds);
+
+            $participantIdsInTeam = $registration->team->teamMembers()->where('role', 'member')->pluck('participant_id');
+            $participantIdsToDelete = $participantIdsInTeam->diff($processedParticipantIds);
 
             if ($participantIdsToDelete->isNotEmpty()) {
-                TeamMember::whereIn('participant_id', $participantIdsToDelete)->delete();
-                Participant::whereIn('id', $participantIdsToDelete)->delete();
+                TeamMember::where('team_id', $registration->team_id)->whereIn('participant_id', $participantIdsToDelete)->delete();
             }
 
             $updateData = ['participant_id' => $leader->id];
             if ($registration->status === 'draft_step_1') {
                 $updateData['status'] = 'draft_step_2';
             }
-
             $registration->update($updateData);
         });
+
+
+
 
         return response()->json(['message' => 'Langkah 2 berhasil disimpan.', 'registration_id' => $registration->id]);
     }
