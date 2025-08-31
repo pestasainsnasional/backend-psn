@@ -48,7 +48,6 @@ class TeamResource extends Resource
                         SpatieMediaLibraryFileUpload::make('payment_proofs')
                             ->label('Bukti Pembayaran')
                             ->collection('payment-proofs')
-                            ->disabled()
                     ])
                     ->visibleOn('edit'),
             ]);
